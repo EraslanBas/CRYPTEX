@@ -99,3 +99,29 @@ def test_fit_and_evaluate_with_the_group_lasso(subspace):
     for g in np.unique(group_keys(p, c)):
         nz = Z[group_keys(p, c) == g] != 0
         assert (nz == nz[0]).all() or not nz.any()
+
+
+def test_row_lasso_activities_depend_on_the_row_alone():
+    """With lasso_groups="row" a row's activities do not change when the other
+    rows of its pair change or are dropped."""
+    from extract.models.group_lasso import lasso_groups
+    X, B, groups, _ = _planted(n_pairs=4)
+    p = groups.numpy()                      # the pair ids
+    g = torch.as_tensor(lasso_groups(p, np.zeros_like(p), "row"))
+    Z_all, _ = group_lasso_codes(X, B, g, 0.3, steps=200)
+    keep = torch.arange(0, len(X), 2)
+    Z_half, _ = group_lasso_codes(X[keep], B, g[keep], 0.3, steps=200)
+    assert torch.allclose(Z_all[keep], Z_half, atol=1e-5)
+
+
+def test_fit_with_the_row_lasso():
+    X, p, c = _toy()
+    val = np.zeros(len(X), bool); val[::5] = True
+    cfg = TrainConfig(pert_embedding_init="random", n_factors=4, epochs=4, batch_size=40, log_every=0, seed=0,
+                      axes_init="random", eval_every=2, lasso_lambda=0.05, lasso_steps=10, lasso_groups="row")
+    model, history = fit(X, p, c, config=cfg, train_rows=~val, val_rows=val)
+    assert all(h["lasso_penalty"] > 0 for h in history)
+    from extract.models.group_lasso import lasso_groups
+    Z = encode(model, X, groups=lasso_groups(p, c, "row"))
+    nz = (Z != 0).sum(1)
+    assert len(set(map(tuple, (Z != 0).astype(int)))) > 1 and nz.max() <= 4

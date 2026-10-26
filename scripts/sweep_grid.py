@@ -146,8 +146,8 @@ def _val_scores(model, fa, rows, batch=4096, seed=12345) -> dict:
         np.arange(len(rows)), np.random.default_rng(seed))
     model.eval()
     t = lambda a: torch.from_numpy(np.asarray(a)).to(device)
-    from extract.models.group_lasso import group_batches, group_keys
-    gkey = group_keys(fa["perturbation_idx"], fa["context_idx"])
+    from extract.models.group_lasso import group_batches, lasso_groups
+    gkey = lasso_groups(fa["perturbation_idx"], fa["context_idx"], model.config.lasso_groups)
     lasso = model.config.coding == "group_lasso"
 
     def logits(idx, p, c):
@@ -230,6 +230,8 @@ def main() -> int:
                          "(perturbation, context) pair (adds _gl<lambda>), or plain least squares")
     ap.add_argument("--lasso-lambda", type=float, default=0.0272)
     ap.add_argument("--lasso-steps", type=int, default=30)
+    ap.add_argument("--lasso-groups", choices=["pair", "row"], default="pair",
+                    help="rows sharing a program selection: the pair (group lasso) or each row alone")
     ap.add_argument("--gene-sparsity", type=float, default=0.05,
                     help="gamma, weight of the L1/L2 sparseness of each program's loadings; adds _gs<gamma>")
     ap.add_argument("--distinct-weight", type=float, default=100.0,
@@ -385,7 +387,8 @@ def main() -> int:
                + (f"_gs{args.gene_sparsity:g}" if args.gene_sparsity else "")
                + ((f"_dt{args.distinct_tau:g}" + (f"_dw{args.distinct_weight:g}" if args.distinct_weight != 100 else ""))
                   if args.distinct_weight else "")
-               + (f"_gl{args.lasso_lambda:g}" if args.coding == "group_lasso" else "_ls")
+               + ((f"_gl{args.lasso_lambda:g}" if args.lasso_groups == "pair" else f"_rowl{args.lasso_lambda:g}")
+                  if args.coding == "group_lasso" else "_ls")
                + ("_negrows" if args.negative_draw == "rows" else "")
                + (f"_half{args.perturbation_half}s{args.half_seed}"
                   + ("_sharedV" if args.shared_subspace else "")
@@ -424,7 +427,8 @@ def main() -> int:
                           gene_sparsity=args.gene_sparsity, distinct_weight=args.distinct_weight,
                           distinct_tau=args.distinct_tau,
                           coding=args.coding, lasso_lambda=args.lasso_lambda,
-                          lasso_steps=args.lasso_steps, negative_draw=args.negative_draw)
+                          lasso_steps=args.lasso_steps, lasso_groups=args.lasso_groups,
+                          negative_draw=args.negative_draw)
         snaps: dict[int, np.ndarray] = {}
         model, hist = fit(config=cfg, train_rows=~val, val_rows=val,
                           subspace_basis=(ext_bases[bname] if use_ext else bases.get(d)),
@@ -464,7 +468,8 @@ def main() -> int:
                "gene_sparsity": args.gene_sparsity, "distinct_weight": args.distinct_weight,
                "distinct_tau": args.distinct_tau,
                "coding": args.coding, "lasso_lambda": args.lasso_lambda,
-               "lasso_steps": args.lasso_steps, "negative_draw": args.negative_draw,
+               "lasso_steps": args.lasso_steps, "lasso_groups": args.lasso_groups,
+               "negative_draw": args.negative_draw,
                "perturbation_half": args.perturbation_half, "half_seed": args.half_seed,
                "shared_subspace": args.shared_subspace,
                "epochs_run": len(hist), "seconds": round(time.time()-t, 1)}

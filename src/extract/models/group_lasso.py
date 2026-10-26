@@ -84,6 +84,20 @@ def group_keys(perturbation_idx, context_idx):
     return p * (int(c.max()) + 1 if len(c) else 1) + c
 
 
+def lasso_groups(perturbation_idx, context_idx, by: str = "pair"):
+    """[n] group ids for the lasso. ``"pair"``: one group per (perturbation,
+    context) pair -- all rows of a pair share one selection of programs (the
+    group lasso). ``"row"``: every row is its own group, so the penalty on a
+    program's activity is ``lam * |z_rk|`` (a lasso per row) and a row's
+    activities depend on that row alone."""
+    import numpy as np
+    if by == "pair":
+        return group_keys(perturbation_idx, context_idx)
+    if by == "row":
+        return np.arange(len(perturbation_idx), dtype=np.int64)
+    raise ValueError(f"lasso groups must be 'pair' or 'row', got {by!r}")
+
+
 def group_batches(keys, batch_size, rng=None):
     """Batches (lists of positions into ``keys``) made of whole groups, each of
     about ``batch_size`` rows; groups in random order when ``rng`` is given,
@@ -91,6 +105,10 @@ def group_batches(keys, batch_size, rng=None):
     import numpy as np
     keys = np.asarray(keys)
     uniq, inv = np.unique(keys, return_inverse=True)
+    if len(uniq) == len(keys):           # one row per group: plain batches
+        order = rng.permutation(len(uniq)) if rng is not None else np.arange(len(uniq))
+        pos = np.argsort(inv, kind="stable")[order]
+        return [pos[i:i + batch_size] for i in range(0, len(pos), batch_size)]
     members = np.split(np.argsort(inv, kind="stable"), np.cumsum(np.bincount(inv))[:-1])
     order = rng.permutation(len(uniq)) if rng is not None else range(len(uniq))
     batches, cur, n_cur = [], [], 0

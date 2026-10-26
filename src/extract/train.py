@@ -97,6 +97,11 @@ class TrainConfig:
     coding: str = "group_lasso"
     lasso_lambda: float = 0.0272
     lasso_steps: int = 30
+    #: Which rows share a selection of programs. ``"pair"``: all rows of a
+    #: (perturbation, context) pair (the group lasso). ``"row"``: each row is
+    #: its own group (a lasso per row), so a row's activities depend on that
+    #: row alone, not on the other rows of its pair or on how many there are.
+    lasso_groups: str = "pair"
 
     #: Regularisation of the label network against memorising training pairs:
     #: decoupled (AdamW) weight decay on its parameters only, and dropout on
@@ -522,9 +527,9 @@ def fit(
         raise ValueError(f"coding must be 'ls' or 'group_lasso', got {config.coding!r}")
     # one group per (perturbation, context): the rows that share a selection
     # of programs under the group lasso
-    from .models.group_lasso import group_batches, group_keys, group_penalty
+    from .models.group_lasso import group_batches, group_penalty, lasso_groups
     from .models.loadings import collinearity_hinge, gene_concentration, gene_prior
-    gkey = group_keys(perturbation_idx, context_idx)
+    gkey = lasso_groups(perturbation_idx, context_idx, config.lasso_groups)
     gkey_t = torch.from_numpy(gkey).to(device)
     if config.coding == "group_lasso":
         model.loadings.renormalize_rows_()
@@ -794,8 +799,8 @@ def evaluate(
     pos_all, perm_all = [], []
     lasso = model.config.coding == "group_lasso"
     if lasso:
-        from .models.group_lasso import group_batches, group_keys, group_penalty
-        gkey = group_keys(perturbation_idx[rows], context_idx[rows])
+        from .models.group_lasso import group_batches, group_penalty, lasso_groups
+        gkey = lasso_groups(perturbation_idx[rows], context_idx[rows], model.config.lasso_groups)
         batches = group_batches(gkey, batch_size)
         t.update(lasso_raw_sq=0.0, lasso_pen=0.0, n_groups=0.0, n_programs=0.0)
     else:
@@ -931,7 +936,7 @@ def encode(
     groups: np.ndarray | None = None,
 ) -> np.ndarray:
     """Factor activations ``Z`` for all rows of ``X`` (``groups``: the rows'
-    group ids, needed with ``coding="group_lasso"``; see ``group_keys``)."""
+    group ids, needed with ``coding="group_lasso"``; see ``lasso_groups``)."""
     model.eval()
     device = next(model.parameters()).device
     x = torch.from_numpy(np.asarray(X, dtype=np.float32)).to(device)
