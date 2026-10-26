@@ -1,4 +1,4 @@
-# Current EXTRACT configuration (defaults on `main`, updated 2026-10-22)
+# Current EXTRACT configuration (defaults on `main`, updated 2026-10-25)
 
 Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`). Running
 `scripts/sweep_grid.py` with no model flags reproduces it exactly.
@@ -11,7 +11,7 @@ Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`
 | Starting axes | joint diagonalisation of the per-context covariances of the pair means | `--axes-init jd` / `axes_init` |
 | Activities | group lasso per (perturbation, context) pair, lambda = 0.0272; the same activities are used by the discriminator and in the reconstruction objective | `--coding group_lasso --lasso-lambda 0.0272` |
 | Head | four statistics (z, z^2, \|z\|, tanh z) with a learned label-only normaliser c_k(p, c) | (the only head) |
-| Discriminator | binary; false examples = label swaps only, one per row | (the only negatives) |
+| Discriminator | binary; false examples = label swaps only, one per row, the wrong label drawn in proportion to its rows (since 2026-10-25; earlier runs drew uniformly over the labels) | `--negative-draw rows` |
 | Label network | MLP on [perturbation 64, context 8] embeddings, dropout 0.2, weight decay 0.01 | `--label-dropout 0.2 --label-weight-decay 0.01` |
 | Embedding starts | perturbations: target-gene responses in the training pairs; contexts: PCA of control-cell means | `--pert-embedding-init response --context-embedding-init control-means` |
 | Gene axis | L1/L2 sparseness of each program's loadings (gamma = 0.05) + hinge forbidding \|cos\| > 0.5 between programs (at least 60 degrees apart; mu = 100) | `--gene-sparsity 0.05 --distinct-tau 0.5 --distinct-weight 100` |

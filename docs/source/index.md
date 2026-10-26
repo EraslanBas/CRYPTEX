@@ -591,6 +591,17 @@ With one context only the first strategy exists, and it suffices.
   than a silent leak.
 - **Balanced.** Each measured row is one true and one false example, so every
   pair contributes equal numbers of both.
+- **Drawn in proportion to rows.** The wrong label is drawn by picking a random
+  row among the candidates (same context and another perturbation, or the same
+  perturbation and another context) and taking its label, so a label with many
+  rows is drawn more often. A pair with more cells has more pseudobulk rows and
+  so appears more often as a true label; drawn this way, it also appears about
+  as often as a false label. Otherwise the label alone would carry information,
+  since labels with many rows would be true more often than false, and the
+  label-only term $c_k(u)$ could learn which perturbations have many cells
+  instead of anything about the responses. This matters most for pairs that
+  select no program, whose activities are all zero and whose score is the label
+  term alone.
 - **Only label swaps.** This is the setting in which the best classifier is the
   density ratio above, so the head's form is the right one. Artificial
   negatives (for example rows with their genes shuffled) would ask a different
@@ -704,6 +715,7 @@ validation.
 | `axes_init` | `jd`: start $\mathbf A$ at the joint-diagonalisation axes; `random`: a random rotation per seed |
 | `coding` | `group_lasso`: activities by the per-pair group lasso; `ls` for plain least squares |
 | `basis` | the head's statistics (`linear`, `square`, `abs`, `tanh`); must keep a non-quadratic one |
+| `negative_draw` | `rows`: wrong labels in proportion to their rows (above); `labels`: uniformly over the observed alternatives |
 | `pert_embedding_init` | `response`: start from the target gene's responses; contexts from the control means (`--context-embedding-init control-means`) |
 | `no_mask` | ablation: no on-target mask |
 

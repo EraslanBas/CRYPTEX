@@ -130,6 +130,12 @@ class TrainConfig:
     eval_every: int = 3
 
     negative_weights: dict[str, float] | None = None
+    #: How a swapped label is drawn. ``"rows"``: in proportion to its number
+    #: of rows, so every label is a negative about as often as it is a
+    #: positive and a label-only term cannot learn which labels have many rows
+    #: (cell counts). ``"labels"``: uniformly over the observed alternatives
+    #: (runs before 2026-10-25).
+    negative_draw: str = "rows"
     log_every: int = 10
 
 
@@ -490,6 +496,8 @@ def fit(
     model.subspace_basis_ = subspace_basis
 
     weights = dict(config.negative_weights or DEFAULT_WEIGHTS)
+    if config.negative_draw not in ("rows", "labels"):
+        raise ValueError(f"negative_draw must be 'rows' or 'labels', got {config.negative_draw!r}")
 
     def _sampler(rows: np.ndarray) -> StratifiedNegativeSampler:
         return StratifiedNegativeSampler(
@@ -499,6 +507,7 @@ def fit(
             n_perturbations=n_perturbations,
             n_contexts=n_contexts,
             weights=weights,
+            row_weighted=config.negative_draw == "rows",
         )
 
     # Built on the training rows only: a held-out pair is never named, even as
@@ -978,6 +987,7 @@ def load_model(sweep_dir, tag: str, which: str = "best", device: str = "cpu") ->
     cfg_d = json.loads((sweep_dir / f"config_{tag}.json").read_text())
     names = {f.name for f in dataclasses.fields(TrainConfig)}
     kw = {k: (tuple(v) if k == "basis" else v) for k, v in cfg_d.items() if k in names}
+    kw.setdefault("negative_draw", "labels")     # saved before the option: uniform draws
     kw["device"] = device
     config = TrainConfig(**kw)
     state = torch.load(sweep_dir / f"model_{which}_{tag}.pt", map_location=device)

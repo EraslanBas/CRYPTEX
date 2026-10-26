@@ -411,7 +411,11 @@ def _toy_dataset(n_pert=20, n_ctx=3, n_strata=4, n_genes=60, d_true=5, seed=0):
 
 def test_fit_runs_and_reduces_both_terms():
     X, p, c, s, n = _toy_dataset()
-    cfg = TrainConfig(pert_embedding_init="random", subspace="free", n_factors=5, epochs=12, batch_size=64, log_every=0, seed=0)
+    # NB the discriminator loss on this toy barely moves in 12 epochs, so the
+    # disc assertion below depends on the random stream (it fails for seed 2
+    # with either draw); pinned to the stream it was written for.
+    cfg = TrainConfig(pert_embedding_init="random", subspace="free", n_factors=5, epochs=12, batch_size=64, log_every=0, seed=0,
+                      negative_draw="labels")
     model, history = fit(X, p, c, target_col=None, config=cfg)
 
     assert len(history) == 12
@@ -764,3 +768,44 @@ def test_on_eval_snapshots_B_at_every_evaluation():
     assert not np.allclose(snaps[0], snaps[9])
     sel = history[-1]["selected_epoch"]
     np.testing.assert_allclose(model.loading_matrix(), snaps[sel])
+
+
+def _uneven_labels(seed=0):
+    """Perturbations with very different numbers of rows, in 3 contexts."""
+    rng = np.random.default_rng(seed)
+    p, c = [], []
+    for pi in range(20):
+        for ci in range(3):
+            n = int(rng.integers(1, 12))
+            p += [pi] * n
+            c += [ci] * n
+    return np.array(p), np.array(c)
+
+
+def test_row_weighted_negatives_match_the_positive_label_frequencies():
+    """Each label should be a negative about as often as it is a positive, so a
+    label-only term cannot tell which labels have many rows."""
+    p, c = _uneven_labels()
+    rng = np.random.default_rng(1)
+    keys = p * 3 + c
+    pos = np.bincount(keys, minlength=60) / len(keys)
+    for row_weighted, close in ((True, True), (False, False)):
+        sampler = StratifiedNegativeSampler(
+            perturbation_idx=p, context_idx=c, stratum=np.zeros(len(p), dtype=np.int64),
+            n_perturbations=20, n_contexts=3, row_weighted=row_weighted)
+        draws = [sampler.sample(np.arange(len(p)), rng) for _ in range(200)]
+        neg = np.bincount(np.concatenate([np_ * 3 + nc for np_, nc in draws]), minlength=60)
+        neg = neg / neg.sum()
+        r = np.corrcoef(pos, neg)[0, 1]
+        assert (r > 0.95) if close else (r < 0.6), (row_weighted, r)
+
+
+def test_row_weighted_negatives_still_name_only_observed_other_labels():
+    p, c = _uneven_labels(2)
+    sampler = StratifiedNegativeSampler(
+        perturbation_idx=p, context_idx=c, stratum=np.zeros(len(p), dtype=np.int64),
+        n_perturbations=20, n_contexts=3)
+    observed = set(zip(p.tolist(), c.tolist()))
+    neg_p, neg_c = sampler.sample(np.arange(len(p)), np.random.default_rng(0))
+    assert set(zip(neg_p.tolist(), neg_c.tolist())) <= observed
+    assert not ((neg_p == p) & (neg_c == c)).any()

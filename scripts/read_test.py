@@ -69,7 +69,9 @@ def main() -> int:
             perturbation_idx=fa["perturbation_idx"], context_idx=fa["context_idx"],
             stratum=np.zeros(len(rows), dtype=np.int64),
             n_perturbations=len(plev), n_contexts=len(clev),
-            weights={"same_s_other_pert": 0.5, "same_s_other_context": 0.5})
+            weights={"same_s_other_pert": 0.5, "same_s_other_context": 0.5},
+            # as the model was trained; configs saved before the option drew uniformly
+            row_weighted=cfg.get("negative_draw", "labels") == "rows")
         m = evaluate(model, torch.from_numpy(fa["X"]), fa["perturbation_idx"], fa["context_idx"],
                      rows, sampler, np.random.default_rng(12345),
                      torch.from_numpy(fa["target_col"]), None)

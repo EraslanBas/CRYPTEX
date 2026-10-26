@@ -128,20 +128,22 @@ class _Queue:
                     p.unlink(missing_ok=True)
 
 
-def _sampler(fa, rows):
+def _sampler(fa, rows, row_weighted=True):
     return StratifiedNegativeSampler(
         perturbation_idx=fa["perturbation_idx"][rows], context_idx=fa["context_idx"][rows],
         stratum=np.zeros(len(rows), dtype=np.int64),
         n_perturbations=int(fa["perturbation_idx"].max()) + 1,
         n_contexts=int(fa["context_idx"].max()) + 1,
-        weights={"same_s_other_pert": 0.5, "same_s_other_context": 0.5})
+        weights={"same_s_other_pert": 0.5, "same_s_other_context": 0.5},
+        row_weighted=row_weighted)
 
 
 def _val_scores(model, fa, rows, batch=4096, seed=12345) -> dict:
     """Discriminator logits on the validation rows: each row under its own label
     (``pos``) and under a swapped label (``perm``, drawn as in training)."""
     device = next(model.parameters()).device
-    neg_p, neg_c = _sampler(fa, rows).sample(np.arange(len(rows)), np.random.default_rng(seed))
+    neg_p, neg_c = _sampler(fa, rows, model.config.negative_draw == "rows").sample(
+        np.arange(len(rows)), np.random.default_rng(seed))
     model.eval()
     t = lambda a: torch.from_numpy(np.asarray(a)).to(device)
     from extract.models.group_lasso import group_batches, group_keys
@@ -233,6 +235,9 @@ def main() -> int:
     ap.add_argument("--distinct-weight", type=float, default=100.0,
                     help="mu: penalise programs with |cos| above --distinct-tau (adds _dt<tau>)")
     ap.add_argument("--distinct-tau", type=float, default=0.5)
+    ap.add_argument("--negative-draw", choices=["rows", "labels"], default="rows",
+                    help="swapped labels in proportion to their rows (default), or uniformly "
+                         "over the labels (runs before 2026-10-25)")
     ap.add_argument("--subspace-method", choices=["rca", "snr", "pca"], default="pca",
                     help="how V is computed: PCA of the pair means (default), reliable components "
                          "analysis, or signal over the within-pair noise model; adds _pca / _rca<rank> / _snr")
@@ -381,6 +386,7 @@ def main() -> int:
                + ((f"_dt{args.distinct_tau:g}" + (f"_dw{args.distinct_weight:g}" if args.distinct_weight != 100 else ""))
                   if args.distinct_weight else "")
                + (f"_gl{args.lasso_lambda:g}" if args.coding == "group_lasso" else "_ls")
+               + ("_negrows" if args.negative_draw == "rows" else "")
                + (f"_half{args.perturbation_half}s{args.half_seed}"
                   + ("_sharedV" if args.shared_subspace else "")
                   if args.perturbation_half is not None else ""))
@@ -418,7 +424,7 @@ def main() -> int:
                           gene_sparsity=args.gene_sparsity, distinct_weight=args.distinct_weight,
                           distinct_tau=args.distinct_tau,
                           coding=args.coding, lasso_lambda=args.lasso_lambda,
-                          lasso_steps=args.lasso_steps)
+                          lasso_steps=args.lasso_steps, negative_draw=args.negative_draw)
         snaps: dict[int, np.ndarray] = {}
         model, hist = fit(config=cfg, train_rows=~val, val_rows=val,
                           subspace_basis=(ext_bases[bname] if use_ext else bases.get(d)),
@@ -458,13 +464,14 @@ def main() -> int:
                "gene_sparsity": args.gene_sparsity, "distinct_weight": args.distinct_weight,
                "distinct_tau": args.distinct_tau,
                "coding": args.coding, "lasso_lambda": args.lasso_lambda,
-               "lasso_steps": args.lasso_steps,
+               "lasso_steps": args.lasso_steps, "negative_draw": args.negative_draw,
                "perturbation_half": args.perturbation_half, "half_seed": args.half_seed,
                "shared_subspace": args.shared_subspace,
                "epochs_run": len(hist), "seconds": round(time.time()-t, 1)}
         for name, rows_ in (("train", np.nonzero(~val)[0]), ("val", np.nonzero(val)[0])):
             m = evaluate(model, X_t, fa["perturbation_idx"], fa["context_idx"], rows_,
-                         _sampler(fa, rows_), np.random.default_rng(12345), col_t, None)
+                         _sampler(fa, rows_, args.negative_draw == "rows"),
+                         np.random.default_rng(12345), col_t, None)
             for k in METRICS:
                 row[f"{name}_{k}"] = m.get(k)
         if queue is not None:
