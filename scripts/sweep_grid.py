@@ -230,8 +230,9 @@ def main() -> int:
                          "(perturbation, context) pair (adds _gl<lambda>), or plain least squares")
     ap.add_argument("--lasso-lambda", type=float, default=0.0272)
     ap.add_argument("--lasso-steps", type=int, default=30)
-    ap.add_argument("--lasso-groups", choices=["pair", "row"], default="pair",
-                    help="rows sharing a program selection: the pair (group lasso) or each row alone")
+    ap.add_argument("--lasso-groups", choices=["pair", "row"], default="row",
+                    help="rows sharing a program selection: each row alone (default, a lasso per row) "
+                         "or the pair (group lasso; runs before 2026-10-28)")
     ap.add_argument("--gene-sparsity", type=float, default=0.05,
                     help="gamma, weight of the L1/L2 sparseness of each program's loadings; adds _gs<gamma>")
     ap.add_argument("--distinct-weight", type=float, default=100.0,

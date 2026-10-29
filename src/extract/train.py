@@ -3,8 +3,8 @@
     L = L_disc + alpha * L_lasso + gamma * L_genes + mu * L_distinct
 
 ``L_disc`` is the label-swap discriminator on the per-component head,
-``L_lasso`` the per-pair group-lasso objective (reconstruction error plus the
-group penalty), ``L_genes`` the L1/L2 sparseness of each program's loadings and
+``L_lasso`` the lasso objective (reconstruction error plus the penalty; a
+lasso per row by default), ``L_genes`` the L1/L2 sparseness of each program's loadings and
 ``L_distinct`` the hinge on near-collinear programs. See the documentation.
 """
 
@@ -88,20 +88,22 @@ class TrainConfig:
     #: from ``seed``.
     axes_init: str = "jd"
 
-    #: Activities z. ``"group_lasso"``: all rows of a (perturbation, context)
-    #: pair share one selection of programs (models.group_lasso); the loadings
-    #: are kept at unit length and the reconstruction term is the lasso
-    #: objective (error + lasso_lambda * group penalty), so it prefers axes on
-    #: which each pair uses few programs. Batches are built from whole pairs.
-    #: ``"ls"``: masked least squares onto B, for comparison.
+    #: Activities z. ``"group_lasso"``: a sparse fit through B
+    #: (models.group_lasso), by default a lasso per row (``lasso_groups``);
+    #: the loadings are kept at unit length and the reconstruction term is the
+    #: lasso objective (error + lasso_lambda * penalty), so it prefers axes on
+    #: which responses use few programs. ``"ls"``: masked least squares onto
+    #: B, for comparison.
     coding: str = "group_lasso"
     lasso_lambda: float = 0.0272
     lasso_steps: int = 30
-    #: Which rows share a selection of programs. ``"pair"``: all rows of a
-    #: (perturbation, context) pair (the group lasso). ``"row"``: each row is
-    #: its own group (a lasso per row), so a row's activities depend on that
-    #: row alone, not on the other rows of its pair or on how many there are.
-    lasso_groups: str = "pair"
+    #: Which rows share a selection of programs. ``"row"`` (default): each row
+    #: is its own group (a lasso per row), so a row's activities depend on that
+    #: row alone, not on the other rows of its pair or on how many there are --
+    #: every row is one data point for the discriminator. ``"pair"``: all rows
+    #: of a (perturbation, context) pair share one selection (the group lasso;
+    #: runs before 2026-10-28).
+    lasso_groups: str = "row"
 
     #: Regularisation of the label network against memorising training pairs:
     #: decoupled (AdamW) weight decay on its parameters only, and dropout on
@@ -205,15 +207,18 @@ class Extract(nn.Module):
         groups: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """The activities ``z``. Masked when ``target_col`` is given. With
-        ``coding="group_lasso"`` the group-lasso activities (``groups`` [n]:
-        one id per (perturbation, context) pair), used both by the
+        ``coding="group_lasso"`` the lasso activities (``groups`` [n]: the
+        rows that share a selection; one per row by default, needed only for
+        ``lasso_groups="pair"``), used both by the
         discriminator and in the reconstruction objective; they and the
         selection are also kept in ``lasso_raw_`` / ``lasso_sel_``."""
         z = self.loadings.project(x, target_col)
         if self.config.coding == "ls":
             return z
         if groups is None:
-            raise ValueError("coding='group_lasso' needs the row groups")
+            if self.config.lasso_groups != "row":
+                raise ValueError("the group lasso (lasso_groups='pair') needs the row groups")
+            groups = torch.arange(len(x), device=x.device)   # a lasso per row
         from .models.group_lasso import group_lasso_codes
         Z, sel = group_lasso_codes(x, self.loadings.B, groups, self.config.lasso_lambda, target_col,
                                    z0=z.detach(), steps=self.config.lasso_steps)
@@ -993,6 +998,7 @@ def load_model(sweep_dir, tag: str, which: str = "best", device: str = "cpu") ->
     names = {f.name for f in dataclasses.fields(TrainConfig)}
     kw = {k: (tuple(v) if k == "basis" else v) for k, v in cfg_d.items() if k in names}
     kw.setdefault("negative_draw", "labels")     # saved before the option: uniform draws
+    kw.setdefault("lasso_groups", "pair")        # saved before the option: the group lasso
     kw["device"] = device
     config = TrainConfig(**kw)
     state = torch.load(sweep_dir / f"model_{which}_{tag}.pt", map_location=device)

@@ -87,7 +87,7 @@ def test_fit_and_evaluate_with_the_group_lasso(subspace):
     val = np.zeros(len(X), bool); val[::5] = True
     cfg = TrainConfig(pert_embedding_init="random", n_factors=4, epochs=6, batch_size=40, log_every=0, seed=0,
                       subspace=subspace, axes_init="random", noise_rank=2, eval_every=3,
-                      coding="group_lasso", lasso_lambda=0.05, lasso_steps=10)
+                      coding="group_lasso", lasso_lambda=0.05, lasso_steps=10, lasso_groups="pair")
     model, history = fit(X, p, c, config=cfg, train_rows=~val, val_rows=val)
     assert np.allclose(model.loadings.B.detach().norm(dim=1).cpu().numpy(), 1.0, atol=1e-5)
     assert all(h["lasso_penalty"] > 0 and 0 < h["programs_per_pair"] <= 4 for h in history)
@@ -123,5 +123,6 @@ def test_fit_with_the_row_lasso():
     assert all(h["lasso_penalty"] > 0 for h in history)
     from extract.models.group_lasso import lasso_groups
     Z = encode(model, X, groups=lasso_groups(p, c, "row"))
+    assert np.array_equal(Z, encode(model, X))        # per row: no groups needed
     nz = (Z != 0).sum(1)
     assert len(set(map(tuple, (Z != 0).astype(int)))) > 1 and nz.max() <= 4

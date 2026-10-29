@@ -73,16 +73,16 @@ subspace* they span from *which axes* inside it are the programs:
 2. **The starting axes.** `A` starts at the joint diagonalisation of the
    per-context covariances of the pair means inside `V`: the axes along which
    the contexts' differences are cleanest.
-3. **The axes, refined.** For every (perturbation, context) pair, a group lasso
-   fits the pair's rows through `B` with as few programs as it can, so axes on
-   which perturbations act sparsely are cheaper. A discriminator must tell
+3. **The axes, refined.** A lasso fits every response through `B` with as few
+   programs as it can, each row on its own, so axes on which perturbations act
+   sparsely are cheaper. A discriminator must tell
    whether a response belongs to its (perturbation, context) label and may score
    each program only separately, which is what makes the axes identifiable. A
    prior on the programs rewards few genes per program and forbids two programs
    from pointing in nearly the same direction.
 
-The activities are the group-lasso fit, so there is one map between programs
-and genes. The loss is
+The activities are the lasso fit, so there is one map between programs and
+genes. The loss is
 
     L = L_disc + alpha * L_lasso + gamma * L_genes + mu * L_distinct
 
@@ -108,7 +108,7 @@ documentation for every choice and the reasoning behind it.
 src/extract/      the method
     de/                 shrunken-logFC pipeline (Welch + ashr), per context
     data/               gene filter, on-target mask, leak-free splits, the subspace V
-    models/             loadings B = A V, group lasso, per-component head, label network
+    models/             loadings B = A V, lasso activities, per-component head, label network
     objectives/         label-swap discrimination, masked reconstruction error
     interpret/          loadings, sign anchoring, effect decomposition, enrichment export
     evaluation/         span test, cross-seed stability, held-out evaluation

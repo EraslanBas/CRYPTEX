@@ -415,7 +415,7 @@ def test_fit_runs_and_reduces_both_terms():
     # disc assertion below depends on the random stream (it fails for seed 2
     # with either draw); pinned to the stream it was written for.
     cfg = TrainConfig(pert_embedding_init="random", subspace="free", n_factors=5, epochs=12, batch_size=64, log_every=0, seed=0,
-                      negative_draw="labels")
+                      negative_draw="labels", lasso_groups="pair")
     model, history = fit(X, p, c, target_col=None, config=cfg)
 
     assert len(history) == 12

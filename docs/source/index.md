@@ -47,12 +47,13 @@ along each program. EXTRACT starts from the axes along which these differences
 between contexts are cleanest (joint diagonalisation of the contexts'
 covariances). These axes are found from the data alone, before training.
 
-**Few programs per perturbation.** A perturbation is expected to act on a few
-processes, not on everything. For every (perturbation, context) pair, EXTRACT
-therefore describes the pair's rows with as few programs as it can: all rows of
-the pair use the same few programs (a group lasso), while a perturbation may use
-different programs in different contexts. Axes on which responses need few
-programs are cheaper, which helps fix the programs.
+**Few programs per response.** A perturbation is expected to act on a few
+processes, not on everything. EXTRACT therefore describes every response with
+as few programs as it can (a lasso), and a perturbation may use different
+programs in different contexts. Each row is fitted on its own, so it is one
+data point: its activities depend on that row alone, not on the other rows of
+its pair. Axes on which responses need few programs are cheaper, which helps
+fix the programs.
 
 **Which programs.** The programs are also chosen by a discriminator. It is shown
 a response together with a (perturbation, context) label and asked: does this
@@ -70,7 +71,7 @@ from pointing in nearly the same direction. Programs may still share genes.
 
 ## Training and choosing a model
 
-Training minimises the discriminator's loss plus the group-lasso objective
+Training minimises the discriminator's loss plus the lasso objective
 (reconstruction error plus the penalty on the number of programs) and the two
 gene-axis terms. The data are
 split by (perturbation, context) pair into training, validation and test sets; a
@@ -91,7 +92,7 @@ only, over several random seeds, and the test pairs are used once, at the end.
   on a program depends on the context.
 
 The [Supplement](#supplement) gives the full method: the data processing, the
-subspace and starting axes, the group lasso, the architecture and objective,
+subspace and starting axes, the lasso, the architecture and objective,
 negatives, training, evaluation, configuration and the code layout.
 
 ## Supplement
@@ -114,8 +115,8 @@ three sources of it:
 2. **The starting axes** come from how the contexts differ: the joint
    diagonalisation of the per-context covariances of the pair means inside
    $\mathbf V$.
-3. **The axes are then refined** by criteria that all depend on them: a group
-   lasso that asks each pair to use few programs, a discriminator that may only
+3. **The axes are then refined** by criteria that all depend on them: a lasso
+   that asks each response to use few programs, a discriminator that may only
    score each program separately, and a prior on the programs themselves (few
    genes each, no two nearly collinear).
 
@@ -249,51 +250,60 @@ behind it can be checked by computing it separately on two halves of the
 perturbations and comparing the axes. Training then refines the axes
 with the two criteria below (`extract.train.jd_axes`, `axes_init="jd"`).
 
-### Activities: the group lasso
+### Activities: a lasso per row
 
-The activities of a pair's rows are not a plain projection. For each
-(perturbation, context) pair $g$ with rows $\mathbf x_1,\dots,\mathbf x_{n_g}$
-and activities $\mathbf Z_g$ ($n_g \times d$, row $r$ is $\mathbf z_r$), EXTRACT
-solves
+The activities of a row are not a plain projection. For each row $\mathbf x$,
+EXTRACT solves
 
 $$
-\min_{\mathbf Z_g}\;
-\tfrac12\sum_{r=1}^{n_g}\big\|\mathbf m_r\odot(\mathbf x_r-\mathbf z_r\mathbf B)\big\|^2
-\;+\;\lambda\sqrt{n_g}\sum_{k=1}^{d}\big\|\mathbf Z_g[:,k]\big\|_2 ,
+\min_{\mathbf z}\;
+\tfrac12\big\|\mathbf m\odot(\mathbf x-\mathbf z\mathbf B)\big\|^2
+\;+\;\lambda\sum_{k=1}^{d}|z_k| ,
 $$
 
-where $\mathbf m_r$ masks the row's own target gene.
+where $\mathbf m$ masks the row's own target gene.
 
-- **One selection per pair.** The penalty is on the length of each program's
-  column of activities across the pair's rows. It sets whole columns exactly to
-  zero, so a program is used by all rows of the pair or by none; a selected
-  program's strength may still differ between the rows.
-- **Different selections per context.** Each (perturbation, context) pair
-  chooses its own programs, so a perturbation can engage different programs
-  in different contexts.
-- **$\sqrt{n_g}$** makes the penalty comparable between pairs with few and many
-  rows, and **unit-length rows of $\mathbf B$** stop the penalty from being
-  avoided by scaling a program up and its activities down.
-- **$\lambda$** sets how many programs a pair uses, and is tuned on validation.
-  A natural scale for it is the typical size of a program's activity in a pair:
-  the median over pairs and programs of $\|\mathbf Z_g[:,k]\|_2/\sqrt{n_g}$ for
-  least-squares activities on the starting axes.
+- **One row, one data point.** Each row is fitted on its own: its activities
+  depend on that row and on $\mathbf B$ only, not on the other rows of its
+  pair or on how many there are. The discriminator therefore judges every row
+  independently, a new single response can be encoded in the same way, and
+  the number of rows of a pair (which follows its cell count) cannot reach the
+  activities.
+- **Exact zeros.** The penalty sets activities exactly to zero, so each row
+  uses a few programs and leaves the others at zero. A perturbation's rows
+  usually select similar programs because they measure the same response, but
+  nothing forces them to.
+- **Unit-length rows of $\mathbf B$** stop the penalty from being avoided by
+  scaling a program up and its activities down.
+- **$\lambda$** sets how many programs a row uses, and is tuned on validation.
+  A natural scale for it is the typical size of a program's activity: the
+  median over rows and programs of $|z_k|$ for least-squares activities on the
+  starting axes. Larger $\lambda$ gives sparser rows, which favours
+  reproducible axes but leaves less information for the discriminator.
 
-**Solving it.** FISTA (proximal gradient with momentum), for all pairs of a
+**Solving it.** FISTA (proximal gradient with momentum), for all rows of a
 batch in parallel: start at the least-squares activities, take a gradient step
 on the reconstruction error with step $1/L$ ($L$ the largest eigenvalue of
-$\mathbf B\mathbf B^\top$), shrink each column by block soft-thresholding,
-$\mathbf Z_g[:,k] \leftarrow \mathbf Z_g[:,k]\max\!\big(0,\,1-\eta\lambda\sqrt{n_g}/\|\mathbf Z_g[:,k]\|_2\big)$,
-and repeat for a fixed number of steps (`lasso_steps`). The steps are differentiable, so gradients reach
-$\mathbf B$. The same activities are used everywhere: in the reconstruction
-objective and by the discriminator, so the whole model rests on one fit.
+$\mathbf B\mathbf B^\top$), shrink each activity by soft-thresholding,
+$z_k \leftarrow \operatorname{sign}(z_k)\max\!\big(0,\,|z_k|-\eta\lambda\big)$,
+and repeat for a fixed number of steps (`lasso_steps`). The steps are
+differentiable, so gradients reach $\mathbf B$. The same activities are used
+everywhere: in the reconstruction objective and by the discriminator, so the
+whole model rests on one fit.
 
-**Why it helps fix the axes.** If the programs are the axes, a pair's response
-lies on a few of them and needs few non-zero columns. Rotate the axes and the
+**Why it helps fix the axes.** If the programs are the axes, a response lies
+on a few of them and needs few non-zero activities. Rotate the axes and the
 same response spreads over many programs, which costs more penalty. The lasso
 objective therefore prefers axes on which perturbations act sparsely, which is
-also what is expected biologically. A worked description, with the numbers, is
-in `docs/notes/group_lasso/group_lasso.pdf`.
+also what is expected biologically.
+
+The same solver can instead share one selection of programs across all rows
+of a (perturbation, context) pair, a group lasso (`lasso_groups="pair"`); the
+penalty is then $\lambda\sqrt{n_g}\sum_k\|\mathbf Z_g[:,k]\|_2$ on each
+program's column of activities over the pair's $n_g$ rows
+(`docs/notes/group_lasso/group_lasso.pdf`). It makes a row's activities
+depend on the other rows of its pair, so the discriminator no longer judges
+rows independently; it is kept only for comparison.
 
 ### Architecture
 
@@ -302,7 +312,7 @@ label network, and a per-component head (`extract.train.Extract`).
 
 ```{raw} html
 <div class="ex-figure">
-<svg viewBox="0 0 780 330" width="780" height="330" role="img" aria-label="Forward pass: x is masked; its activities z are found by a group lasso shared by the rows of its (perturbation, context) pair; four statistics of z are weighted by label coefficients theta, a label-only normaliser is subtracted, and the sum is the logit; z times B reconstructs x.">
+<svg viewBox="0 0 780 330" width="780" height="330" role="img" aria-label="Forward pass: x is masked; its activities z are found by a lasso fitted to the row alone; four statistics of z are weighted by label coefficients theta, a label-only normaliser is subtracted, and the sum is the logit; z times B reconstructs x.">
   <defs>
     <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
     <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahB"/></marker>
@@ -314,8 +324,8 @@ label network, and a per-component head (`extract.train.Extract`).
   <text x="215" y="59" text-anchor="middle" font-size="13.5">mask on-target</text>
   <text x="215" y="77" text-anchor="middle" class="sub">x̃ = m ⊙ x</text>
   <rect class="box" x="310" y="36" width="140" height="52" rx="4"/>
-  <text x="380" y="59" text-anchor="middle" font-size="13.5">z: group lasso</text>
-  <text x="380" y="77" text-anchor="middle" class="sub">one selection per pair</text>
+  <text x="380" y="59" text-anchor="middle" font-size="13.5">z: lasso</text>
+  <text x="380" y="77" text-anchor="middle" class="sub">each row on its own</text>
   <rect class="box" x="480" y="36" width="140" height="52" rx="4"/>
   <text x="550" y="59" text-anchor="middle" font-size="13.5">q<tspan font-size="10" dy="3">j</tspan><tspan dy="-3">(z</tspan><tspan font-size="10" dy="3">k</tspan><tspan dy="-3">)</tspan></text>
   <text x="550" y="77" text-anchor="middle" class="sub">4 statistics − c(u) · d</text>
@@ -366,7 +376,7 @@ label network, and a per-component head (`extract.train.Extract`).
 
 $\mathbf B = \mathbf A\mathbf V$ is the only factor → gene map. Activities are
 not predicted by a network; they are fitted to the row through $\mathbf B$ (the
-group lasso above). A separate encoder would give two factor → gene maps that
+lasso above). A separate encoder would give two factor → gene maps that
 can disagree about what factor $k$ means, and encoder weights are filters, not
 patterns (Haufe et al. 2014): a gene can get a large weight precisely to cancel
 it. Fitting the activities through $\mathbf B$ makes $\mathbf B$ a pattern by
@@ -458,9 +468,9 @@ makes the activities independent over all samples (marginal independence). Since
 the assumption concerns the activities, nothing requires the programs' gene
 loadings to be orthogonal: independent programs may share genes and point in
 similar directions in gene space, which is why $\mathbf A$ is a general
-invertible matrix rather than a rotation. The group lasso adds a related
-property: each pair uses few programs, so each program's activity is exactly
-zero for most pairs and large for a few.
+invertible matrix rather than a rotation. The lasso adds a related property:
+each response uses few programs, so each program's activity is exactly zero
+for most responses and large for a few.
 
 **Why the label-only term $c_k(u)$.** It plays the role of the distribution's
 normaliser, $\log Z_k(u)$: the amount each label must subtract so that its
@@ -485,7 +495,7 @@ refused, because $\sum_k z_k^2$ is rotation invariant.
 The theorem's conditions (noiseless mixing, enough label-driven variation of the
 programs' distributions) hold only approximately in real screens. When most of
 the label signal is in the programs' means, the head alone constrains the
-rotation only weakly; the starting axes and the group lasso supply the rest.
+rotation only weakly; the starting axes and the lasso supply the rest.
 
 #### Shapes
 
@@ -493,9 +503,8 @@ rotation only weakly; the starting axes and the group lasso supply the rest.
 |---|---|---|---|
 | `x` | [batch, G] | input | unscaled shrunken logFC |
 | `target_col` | [batch] | input | column to mask, −1 for none |
-| pair id | [batch] | input | which rows are solved together |
 | `B` | [d, G] | loadings | $\mathbf A\mathbf V$, unit rows; the interpretable output |
-| `z` | [batch, d] | group lasso | zero for unselected programs |
+| `z` | [batch, d] | lasso | zero for unused programs |
 | `q(z)` | [batch, d, 4] | head | four statistics |
 | `e_p` | [batch, $d_p$] | label network | shared perturbation embedding |
 | `e_c` | [batch, $d_c$] | label network | shared context embedding |
@@ -511,25 +520,25 @@ $$
 
 **Discrimination.**
 $\mathcal L_{\text{disc}} = \mathrm{BCE}\big(s(\mathbf x, u), 1\big) + \mathrm{BCE}\big(s(\mathbf x, u^{-}), 0\big)$,
-each term averaged over its own rows, on the group-lasso activities. A false
+each term averaged over its own rows, on the lasso activities. A false
 example keeps the observed vector and swaps the label, so the distribution of
 $\mathbf x$ is the same for true and false examples and the only way to win is
 to model how $\mathbf x$ depends on $u$.
 
-**The group-lasso objective.**
+**The lasso objective.**
 
 $$
 \mathcal L_{\text{lasso}} = \frac1n\sum_{\text{rows } r}\frac{\|\mathbf m_r\odot(\mathbf x_r - \mathbf z_r\mathbf B)\|^2}{G_r}
-\;+\; \frac{2\lambda}{nG}\sum_{\text{pairs } g}\sqrt{n_g}\sum_k\|\mathbf Z_g[:,k]\|_2 ,
+\;+\; \frac{2\lambda}{nG}\sum_{\text{rows } r}\sum_k|z_{rk}| ,
 $$
 
-over the batch's $n$ measured rows, with the group-lasso activities; $G_r$ is
-the number of genes row $r$ keeps ($G$, or $G-1$ when its target gene is
-masked). It is the per-pair objective above, summed over the batch's pairs and
-divided by $nG/2$ (up to that one masked gene), so it is on a per-row, per-gene
-scale. $\lambda$ appears twice: in the solve
-(which programs a pair selects) and here (so the gradient on $\mathbf A$ makes
-axes on which pairs need fewer programs cheaper). Every row weighs the same.
+over the batch's $n$ measured rows, with the lasso activities; $G_r$ is the
+number of genes row $r$ keeps ($G$, or $G-1$ when its target gene is masked).
+It is the per-row objective above, summed over the batch's rows and divided by
+$nG/2$ (up to that one masked gene), so it is on a per-row, per-gene scale.
+$\lambda$ appears twice: in the solve (which programs a row uses) and here (so
+the gradient on $\mathbf A$ makes axes on which responses need fewer programs
+cheaper). Every row weighs the same.
 
 **The weight $\alpha$.** The discrimination term is of order 1, while the
 reconstruction error per gene is of order the mean squared logFC, typically
@@ -616,11 +625,10 @@ computes $\mathbf V$ from the measured training rows, the starting axes
 $\mathbf A_0$ by joint diagonalisation, and the starting embeddings. Then, per
 step:
 
-1. Draw a batch of **whole pairs**: pairs in random order are added until the
-   batch reaches the target number of rows, so each pair's rows are solved
-   together; the sampler returns a wrong label for each measured row.
-2. Solve the group lasso for every pair of the batch with the current
-   $\mathbf B$, with the on-target mask.
+1. Draw a batch of rows in random order; the sampler returns a wrong label for
+   each measured row.
+2. Solve the lasso for every row of the batch with the current $\mathbf B$,
+   with the on-target mask.
 3. Score true labels $s(\mathbf z, p, c)$ and false labels
    $s(\mathbf z, p^*, c^*)$; the same $\mathbf z$ serves both.
 4. Compute $\mathcal L_{\text{disc}}$, $\mathcal L_{\text{lasso}}$ and the two gene-axis
@@ -672,8 +680,8 @@ the read is logged.
 | Metric | Tests |
 |---|---|
 | held-out AUC | Can the model tell an unseen $(p, c)$ from a wrong label? A lookup table scores 0.5. |
-| programs per pair | How many programs the group lasso selects for a held-out pair. |
-| reconstruction | Masked squared error per gene of $\mathbf z\mathbf B$, with the group-lasso activities; `extract.evaluation.reconstruction` also gives the fraction of squared norm recovered by $\operatorname{span}(\mathbf B)$ (least-squares activities). |
+| programs per row | How many programs the lasso uses for a held-out row. |
+| reconstruction | Masked squared error per gene of $\mathbf z\mathbf B$, with the lasso activities; `extract.evaluation.reconstruction` also gives the fraction of squared norm recovered by $\operatorname{span}(\mathbf B)$ (least-squares activities). |
 | span residual $r$ | $\|\mathbf m \odot (\mathbf x - \mathbf x\mathbf B^{+}\mathbf B)\| / \|\mathbf m \odot \mathbf x\|$: do held-out rows need programs outside $\operatorname{span}(\mathbf B)$? |
 | seed agreement | Matched $|\cos|$ between the programs of models trained with different seeds or on different data (Hungarian matching, no centring; `extract.evaluation.stability`), against the agreement of two random sets of axes in $\mathbf V$. |
 
@@ -713,7 +721,8 @@ validation.
 |---|---|
 | `subspace` / `subspace_method` | `fixed` / `pca`: $\mathbf B = \mathbf A\mathbf V$ with $\mathbf V$ the PCA of the pair means; `free` learns $\mathbf B$ directly |
 | `axes_init` | `jd`: start $\mathbf A$ at the joint-diagonalisation axes; `random`: a random rotation per seed |
-| `coding` | `group_lasso`: activities by the per-pair group lasso; `ls` for plain least squares |
+| `coding` | `group_lasso`: activities by the lasso solver (below); `ls` for plain least squares |
+| `lasso_groups` | `row`: a lasso per row (each row one data point); `pair`: one selection shared by a pair's rows (group lasso, for comparison) |
 | `basis` | the head's statistics (`linear`, `square`, `abs`, `tanh`); must keep a non-quadratic one |
 | `negative_draw` | `rows`: wrong labels in proportion to their rows (above); `labels`: uniformly over the observed alternatives |
 | `pert_embedding_init` | `response`: start from the target gene's responses; contexts from the control means (`--context-embedding-init control-means`) |
@@ -724,12 +733,12 @@ validation.
 | Field | Role |
 |---|---|
 | `n_factors` | $d$, the number of programs |
-| `lasso_lambda` | $\lambda$, how many programs a pair uses |
+| `lasso_lambda` | $\lambda$, how many programs a row uses |
 | `alpha` | $\alpha$, weight of $\mathcal L_{\text{lasso}}$ against $\mathcal L_{\text{disc}}$ |
 | `embedding_dim` / `context_embedding_dim` / `label_hidden` | label-network sizes |
 | `label_dropout` / `label_weight_decay` | label-network regularisation |
 | `epochs` / `batch_size` / `lr` / `eval_every` | training length, batch size, learning rate, validation interval |
-| `lasso_steps` / `ridge` | group-lasso iterations; conditioning of the least-squares starting point |
+| `lasso_steps` / `ridge` | lasso (FISTA) iterations; conditioning of the least-squares starting point |
 | `gene_sparsity` | $\gamma$, how concentrated the programs' loadings become |
 | `distinct_tau` / `distinct_weight` | $\tau$, the largest allowed $|\cos|$ between two programs (minimum angle $\arccos\tau$); $\mu$, how strictly it is enforced |
 
@@ -739,7 +748,7 @@ validation.
 |---|---|
 | `extract/de/` | Welch statistics → `ashr` → merge → pivot; full-data and disjoint pseudobulk rows; matrix assembly |
 | `extract/data/` | `noise.py` the subspace $\mathbf V$ (PCA of pair means; signal-to-noise variants); `splits.py` test pairs, validation, the low-cell filter, gene lists |
-| `extract/models/` | `loadings.py` $\mathbf B = \mathbf A\mathbf V$ and projections; `group_lasso.py` the per-pair group lasso; `heads.py` the per-component head; `label_net.py` |
+| `extract/models/` | `loadings.py` $\mathbf B = \mathbf A\mathbf V$ and projections; `group_lasso.py` the lasso solver (per row, or per pair as a group lasso); `heads.py` the per-component head; `label_net.py` |
 | `extract/objectives/` | `contrastive.py` label-swap sampler and BCE; `reconstruction.py` the masked squared error |
 | `extract/train.py` | `TrainConfig`, `Extract`, `fit`, `evaluate`, `jd_axes`, embedding starts, `load_model` |
 | `extract/interpret/` | loadings, sign anchoring, effect decomposition, enrichment export |

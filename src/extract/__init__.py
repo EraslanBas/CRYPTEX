@@ -10,10 +10,10 @@ The model, in one line:
   the PCA of the training pairs' mean responses (uncentred, computed once and
   fixed); only the d x d matrix ``A`` is learned, starting at the
   joint-diagonalisation axes of the per-context covariances.
-* ``z`` is fitted to ``x`` through ``B`` by a group lasso per (perturbation,
-  context) pair: all rows of a pair share one selection of programs
-  (``models.group_lasso``). There is no separate encoder, so there is one
-  factor->gene map. ``m`` masks the perturbation's own transcript.
+* ``z`` is fitted to ``x`` through ``B`` by a lasso, each row on its own
+  (``models.group_lasso``), so every row is one data point. There is no
+  separate encoder, so there is one factor->gene map. ``m`` masks the
+  perturbation's own transcript.
 
 The objective (``train``):
 
@@ -24,8 +24,8 @@ The objective (``train``):
    restricted to a *sum over components* (``models.heads``). Additive
    separability is not preserved under mixing, so the sum-form optimum is
    reachable only in unmixed coordinates.
-2. **L_lasso** -- the group-lasso objective (masked reconstruction error plus
-   the group penalty): axes on which each pair needs few programs are cheaper.
+2. **L_lasso** -- the lasso objective (masked reconstruction error plus the
+   penalty): axes on which responses need few programs are cheaper.
 3. **L_genes** and **L_distinct** -- few genes per program (L1/L2 sparseness of
    each row of ``B``) and a hinge that forbids near-collinear programs.
 

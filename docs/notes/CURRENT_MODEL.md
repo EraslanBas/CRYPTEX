@@ -1,4 +1,4 @@
-# Current EXTRACT configuration (defaults on `main`, updated 2026-10-25)
+# Current EXTRACT configuration (defaults on `main`, updated 2026-10-28)
 
 Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`). Running
 `scripts/sweep_grid.py` with no model flags reproduces it exactly.
@@ -9,7 +9,7 @@ Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`
 | Programs | d = 20 | `--d 20` / `n_factors` |
 | Subspace | fixed V = PCA of the training pair means; B = A V, A learned | `--subspace fixed --subspace-method pca` |
 | Starting axes | joint diagonalisation of the per-context covariances of the pair means | `--axes-init jd` / `axes_init` |
-| Activities | group lasso per (perturbation, context) pair, lambda = 0.0272; the same activities are used by the discriminator and in the reconstruction objective | `--coding group_lasso --lasso-lambda 0.0272` |
+| Activities | a lasso per row (since 2026-10-28; earlier runs used the group lasso per pair), the same activities used by the discriminator and in the reconstruction objective; lambda tuned in the sweep (per-row scale = median \|z\| of least-squares activities on the JD axes: 0.0129 at d = 20) | `--lasso-groups row --lasso-lambda` |
 | Head | four statistics (z, z^2, \|z\|, tanh z) with a learned label-only normaliser c_k(p, c) | (the only head) |
 | Discriminator | binary; false examples = label swaps only, one per row, the wrong label drawn in proportion to its rows (since 2026-10-25; earlier runs drew uniformly over the labels) | `--negative-draw rows` |
 | Label network | MLP on [perturbation 64, context 8] embeddings, dropout 0.2, weight decay 0.01 | `--label-dropout 0.2 --label-weight-decay 0.01` |
@@ -19,7 +19,7 @@ Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`
 | Training | 1000 epochs, batch 1,024, evaluated every 3 epochs, no early stopping, best epoch by validation ROC AUC; 3 seeds | `--epochs 1000` |
 | Saved per model | best and final weights, config, label levels, history (every loss term), validation logits | |
 
-Kept as options: least-squares activities (`--coding ls`), random starting axes, the RCA and
+Kept as options: the group lasso per pair (`--lasso-groups pair`), least-squares activities (`--coding ls`), random starting axes, the RCA and
 signal-to-noise subspaces, free B, the perturbation halves. Removed from the code (in the git
 history): the distance head, the plain statistics head, product/AMMI label models, shuffled-data
 negatives, precision weights, the total-correlation term, early stopping, the top-k gene prior. See `group_lasso/group_lasso.pdf` for the group lasso.

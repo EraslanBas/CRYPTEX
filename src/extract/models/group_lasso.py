@@ -1,4 +1,9 @@
-"""Group-lasso activities: one selection of programs per group of rows.
+"""Lasso activities: one selection of programs per group of rows.
+
+By default every row is its own group (``lasso_groups(..., "row")``): a lasso
+per row, ``1/2 ||m * (x - z B)||^2 + lam * sum_k |z_k|``, so a row's
+activities depend on that row alone. With the rows of a (perturbation,
+context) pair as one group it is the group lasso below (kept for comparison).
 
 For a group g of rows (all rows of one (perturbation, context) pair: the
 full-data estimate and its pseudobulks), the activities Z_g [n_g, d] solve
