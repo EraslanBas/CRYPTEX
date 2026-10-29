@@ -16,8 +16,9 @@ model is described in `CURRENT_MODEL.md` and on the documentation site.
 
 ## Choosing the axes / identifiability
 
-- **Random starts per seed** and **training on halves of the perturbations**: the decisive tests of
-  whether the axes are determined by the data. *(next, agreed)*
+- **Random starts per seed**: the decisive test of whether the axes are determined by the data
+  rather than by the JD start. *(next, agreed)*
+- **Training on halves of the perturbations.** *(done 2026-10-22 / 26; now the main criterion)*
 - **Choose d by reproducibility** (cNMF-style): ICA / JD / model stability over d on halves of the
   perturbations.
 - **Context-specific variances in the loss**, not only in the start: a context-variance term or a
@@ -26,18 +27,27 @@ model is described in `CURRENT_MODEL.md` and on the documentation site.
 - **Rotation margin loss**: score each row on the current axes and on randomly rotated axes (with
   co-rotated predictions) and require the current ones to score better.
 - **Track convergence of the axes**: rotation per 100 epochs; whether drift stops; compare axes at
-  the selected epoch and at epoch 1000.
+  the selected epoch and at epoch 1000. *(done: `scripts/program_drift.py`; programs stop moving by
+  ~epoch 700; diagnostic only, training always runs all epochs)*
 - **Product (AMMI-type) label structure** per program: perturbation factor x context factor, retested
-  with the current head and group lasso.
+  with the current head and lasso.
 - **Label-side sparsity instead of data-side**: least-squares z for the discriminator, sparse
   predicted effects from the label network, to avoid the AUC cost of sparse codes.
 - **Drug effects sparse in programs**: the change between DMSO and a drug touches few programs.
-- **Tune lambda near 0.027.**
+- **Tune lambda.** *(in sweep 1: x0.5-x4 the per-row scale, 2026-10-28)*
+- **The pair as one data point** (alternative to the per-row lasso): keep a shared selection per pair
+  but score the whole pair under its true and a swapped label; needs equal rows per pair to keep
+  cell counts out. *(noted 2026-10-25)*
+- **Check the lasso solver**: 30 FISTA steps against scikit-learn's exact `Lasso` per row on saved
+  models (objective, selected programs, activities). *(noted 2026-10-25)*
+- **Label-only AUC check**: validation AUC with z = 0 for every row, to measure how much a model's
+  AUC comes from the label term alone. *(noted 2026-10-25)*
 
 ## Gene-axis sparsity
 
 - **L1/L2 sparseness of each program's loadings + a hinge on near-collinear programs** (cosine over
-  the full loadings, tau 0.5-0.7). Implemented on branch `gene-prior-l1`, not yet run. *(next, agreed)*
+  the full loadings, tau 0.5-0.7). *(done: in the default model, gamma 0.05, tau 0.5; gamma tuned in
+  sweep 1)*
 - Hub genes (large-response genes in many programs): optional down-weighting in the distinctness
   term, or reporting programs by their distinctive genes.
 

@@ -84,9 +84,9 @@ only, over several random seeds, and the test pairs are used once, at the end.
 
 - **Programs:** each row of $\mathbf B$ is one program, a weight for every gene
   in log-fold-change units. Its top genes say what the program is.
-- **Activities:** for each perturbation in each context, which programs it uses
-  and how far each moves: up, down, or exactly zero for the programs it does not
-  use.
+- **Activities:** for every response (row), which programs it uses and how far
+  each moves: up, down, or exactly zero for the programs it does not use. A
+  (perturbation, context) pair's activities are the average over its rows.
 - **Effects:** activities split into what a perturbation does everywhere, what a
   context does on its own, and the **interaction**: where a perturbation's effect
   on a program depends on the context.
@@ -608,9 +608,9 @@ With one context only the first strategy exists, and it suffices.
   as often as a false label. Otherwise the label alone would carry information,
   since labels with many rows would be true more often than false, and the
   label-only term $c_k(u)$ could learn which perturbations have many cells
-  instead of anything about the responses. This matters most for pairs that
-  select no program, whose activities are all zero and whose score is the label
-  term alone.
+  instead of anything about the responses. This matters most for rows that use
+  no program, whose activities are all zero and whose score is the label term
+  alone.
 - **Only label swaps.** This is the setting in which the best classifier is the
   density ratio above, so the head's form is the right one. Artificial
   negatives (for example rows with their genes shuffled) would ask a different
@@ -665,7 +665,10 @@ different scales.
 **Choosing settings.** The hyperparameters ($d$, $\lambda$, $\alpha$, the
 embedding sizes and the label-network regularisation) are tuned for each dataset.
 Models are compared on validation only, each over several random seeds:
-validation AUC, and how well the programs agree between seeds.
+validation AUC, how well the programs agree between seeds, and how well they
+agree between models trained on two disjoint halves of the perturbations (both
+in one shared $\mathbf V$), the most direct test that the programs are set by
+the data rather than by the run.
 Differences smaller than the spread across seeds are not differences.
 
 **What is saved.** Each model's weights at the selected epoch and at the last

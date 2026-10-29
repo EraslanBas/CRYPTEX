@@ -22,6 +22,11 @@ Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`
 Kept as options: the group lasso per pair (`--lasso-groups pair`), least-squares activities (`--coding ls`), random starting axes, the RCA and
 signal-to-noise subspaces, free B, the perturbation halves. Removed from the code (in the git
 history): the distance head, the plain statistics head, product/AMMI label models, shuffled-data
-negatives, precision weights, the total-correlation term, early stopping, the top-k gene prior. See `group_lasso/group_lasso.pdf` for the group lasso.
+negatives, precision weights, the total-correlation term, early stopping, the top-k gene prior. See `group_lasso/group_lasso.pdf` for the group lasso (now the comparison option).
 
-Done 2026-10-22: reproducibility across halves of the perturbations (`--perturbation-half`, `--shared-subspace`), {own, shared} V x {gene prior, none}, in `sweep_halvesGS_d20_noMT/`. Open next: a hyperparameter sweep on cross-half agreement, then random starts per seed.
+Done:
+- 2026-10-22: reproducibility across halves of the perturbations (`--perturbation-half`, `--shared-subspace`), {own, shared} V x {gene prior, none}, group lasso, in `sweep_halvesGS_d20_noMT/`: shared V + gene prior best (cross-half 0.80).
+- 2026-10-25: negatives drawn in proportion to their rows (label-only term could otherwise learn cell counts).
+- 2026-10-26: per-row lasso vs group lasso on the halves test, in `sweep_rowlasso_d20_noMT/`: per-row cross-half 0.81 (lambda 0.0272) / 0.81 (0.0544, 10 axes > 0.9) vs group 0.79, at lower validation AUC (0.78 / 0.74 vs 0.80). Per-row lasso made the default 2026-10-28.
+
+Running (started 2026-10-28): sweep 1 on cross-half agreement, d {10, 15, 20} x lambda {0.5, 1, 2, 4} x the per-row scale x gamma {0, 0.05, 0.15}, shared V, seed 0 per half, in `sweep1_rowlasso_d_lambda_gamma/` (code 9cd81e3). Then: more seeds for the best settings, tau / alpha, random starts per seed.

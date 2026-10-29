@@ -21,6 +21,16 @@
 \begin{document}
 \maketitle
 
+\noindent\fbox{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\small
+\textbf{Status (2026-10-28).} The default model now uses a \emph{lasso per row}
+(\texttt{lasso\_groups="row"}): every row is fitted on its own, so its activities
+depend on that row alone and each row is one data point for the discriminator. The
+group lasso described here (\texttt{lasso\_groups="pair"}) makes a row's activities
+depend on the other rows of its pair and on how many there are; it is kept for
+comparison. The solver, the objective and the way it enters training are the same,
+with every row as its own group.}}
+\bigskip
+
 \section{The idea in one paragraph}
 
 Every row of the data is the response of one (perturbation, context) pair: the
