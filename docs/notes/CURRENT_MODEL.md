@@ -16,7 +16,7 @@ Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`
 | Embedding starts | perturbations: target-gene responses in the training pairs; contexts: PCA of control-cell means | `--pert-embedding-init response --context-embedding-init control-means` |
 | Gene axis | L1/L2 sparseness of each program's loadings (gamma = 0.05) + hinge forbidding \|cos\| > 0.5 between programs (at least 60 degrees apart; mu = 100) | `--gene-sparsity 0.05 --distinct-tau 0.5 --distinct-weight 100` |
 | Loss | L_disc + alpha * L_lasso + gamma * L_genes + mu * L_distinct, alpha = 700 | `--alpha 700` |
-| Training | 1000 epochs, batch 1,024, evaluated every 3 epochs, no early stopping, best epoch by validation ROC AUC; 3 seeds | `--epochs 1000` |
+| Training | 2000 epochs (since 2026-10-29; 1000 before), batch 1,024, evaluated every 3 epochs, no early stopping, best epoch by validation ROC AUC; 3 seeds | `--epochs 2000` |
 | Saved per model | best and final weights, config, label levels, history (every loss term), validation logits | |
 
 Kept as options: the group lasso per pair (`--lasso-groups pair`), least-squares activities (`--coding ls`), random starting axes, the RCA and
@@ -29,4 +29,6 @@ Done:
 - 2026-10-25: negatives drawn in proportion to their rows (label-only term could otherwise learn cell counts).
 - 2026-10-26: per-row lasso vs group lasso on the halves test, in `sweep_rowlasso_d20_noMT/`: per-row cross-half 0.81 (lambda 0.0272) / 0.81 (0.0544, 10 axes > 0.9) vs group 0.79, at lower validation AUC (0.78 / 0.74 vs 0.80). Per-row lasso made the default 2026-10-28.
 
-Running (started 2026-10-28): sweep 1 on cross-half agreement, d {10, 15, 20} x lambda {0.5, 1, 2, 4} x the per-row scale x gamma {0, 0.05, 0.15}, shared V, seed 0 per half, in `sweep1_rowlasso_d_lambda_gamma/` (code 9cd81e3). Then: more seeds for the best settings, tau / alpha, random starts per seed.
+- 2026-10-29: sweep 1 (1000 epochs) on cross-half agreement, d {10, 15, 20} x lambda {0.5, 1, 2, 4} x the per-row scale x gamma {0, 0.05, 0.15}, shared V, seed 0 per half, in `sweep1_rowlasso_d_lambda_gamma/` (code 9cd81e3); analysis in `notebooks/extract/08_Sweep1_Hyperparameters.ipynb`. Most reproduced programs: d 20, lambda x2 (0.0258), gamma 0.15 (14 of 20 above 0.9). Agreement does not rise with validation AUC; AUC is set by lambda (sparsity). Test set read once for all 72 models (exploration, not used for selection).
+
+Running (started 2026-10-29): the same sweep at 2000 epochs, in `sweep2_rowlasso_2000ep/`, to see whether AUC, agreement or the programs keep changing after epoch 1000.

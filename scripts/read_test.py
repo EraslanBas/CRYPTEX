@@ -13,12 +13,17 @@ obtained after choosing among configurations by their test scores is no longer
 an unbiased estimate.
 
     python scripts/read_test.py <sweep_dir> --tag <tag> --reason "chosen on val AUC"
+
+A model trained on part of the perturbations (``--perturbation-half``) is scored
+on the test pairs of the perturbations it was trained on (the others have no
+embedding). ``--out`` also writes the scores to a CSV, one row per tag.
 """
 from __future__ import annotations
 import argparse, datetime, getpass, json, sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
@@ -41,6 +46,7 @@ def main() -> int:
     ap.add_argument("--again", action="store_true",
                     help="allow a read when test has been read before")
     ap.add_argument("--device", default="cpu")
+    ap.add_argument("--out", type=Path, default=None, help="also write the scores to this CSV")
     args = ap.parse_args()
 
     log = args.sweep_dir / "TEST_READS.log"
@@ -54,7 +60,7 @@ def main() -> int:
     if missing:
         raise SystemExit(f"no saved model for: {missing}")
 
-    cache = {}
+    cache, results = {}, []
     for tag in args.tag:
         cfg = json.loads((args.sweep_dir / f"config_{tag}.json").read_text())
         split = cfg["split_dir"]
@@ -62,9 +68,17 @@ def main() -> int:
             cache[split] = load_partition(split, "test", None)
         Xte, mte, genes = cache[split]
         plev, clev = np.load(args.sweep_dir / f"levels_{tag}.npy", allow_pickle=True)
-        fa = prepare(Xte, mte, genes, perturbation_levels=plev, context_levels=clev)
+        # only perturbations and contexts the model was trained on (all of them,
+        # unless it was trained on a half of the perturbations)
+        known = (mte.perturbation.astype(str).isin(set(map(str, plev)))
+                 & mte.context.astype(str).isin(set(map(str, clev)))).to_numpy()
+        if not known.all():
+            print(f"{tag}: scoring {int(known.sum()):,} of {len(mte):,} test rows "
+                  "(perturbations the model was trained on)")
+        fa = prepare(Xte[known], mte[known].reset_index(drop=True), genes,
+                     perturbation_levels=plev, context_levels=clev)
         model = load_model(args.sweep_dir, tag, "best", device=args.device)
-        rows = np.arange(len(mte))
+        rows = np.arange(int(known.sum()))
         sampler = StratifiedNegativeSampler(
             perturbation_idx=fa["perturbation_idx"], context_idx=fa["context_idx"],
             stratum=np.zeros(len(rows), dtype=np.int64),
@@ -76,7 +90,13 @@ def main() -> int:
                      rows, sampler, np.random.default_rng(12345),
                      torch.from_numpy(fa["target_col"]), None)
         print(f"{tag}\n  " + "  ".join(f"test_{k} {m[k]:.4f}" for k in SHOW if k in m))
+        results.append({"tag": tag, "test_rows": int(known.sum()),
+                         "test_pairs": int(mte[known].groupby(["perturbation", "context"]).ngroups),
+                         **{f"test_{k}": m[k] for k in SHOW if k in m}})
 
+    if args.out is not None:
+        pd.DataFrame(results).to_csv(args.out, index=False)
+        print(f"scores written to {args.out}")
     stamp = datetime.datetime.now().isoformat(timespec="seconds")
     with open(log, "a") as fh:
         fh.write(f"{stamp}\t{getpass.getuser()}\t{','.join(args.tag)}\t{args.reason}\n")

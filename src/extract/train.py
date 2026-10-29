@@ -54,7 +54,9 @@ class TrainConfig:
     alpha: float = 700.0
 
     batch_size: int = 1024
-    epochs: int = 1000
+    #: Training length; every model runs all epochs (no early stopping) and keeps
+    #: the epoch with the best validation AUC.
+    epochs: int = 2000
     lr: float = 1e-3
     grad_clip: float | None = 5.0
     seed: int = 0

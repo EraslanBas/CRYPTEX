@@ -179,7 +179,7 @@ def main() -> int:
     ap.add_argument("-K","--n-subsamples", nargs="+", type=int, default=[10],
                     help="pseudobulk rows per pair used in training (besides the full row)")
     ap.add_argument("--seeds", nargs="+", type=int, default=[0,1,2])
-    ap.add_argument("--epochs", type=int, default=1000)
+    ap.add_argument("--epochs", type=int, default=2000)
     ap.add_argument("--min-epochs", type=int, default=None,
                     help="accepted for older job scripts; every model trains --epochs epochs")
     ap.add_argument("--batch-size", type=int, default=1024)
