@@ -1,7 +1,6 @@
 # CRYPTEX
 
-**EX**pression programs from **T**reatment **R**esponses **A**cross **C**ontexts
-via **T**ensors.
+**Identifiable discovery of gene programs from perturbation-by-context screens.**
 
 **Documentation: https://eraslanbas.github.io/CRYPTEX/**
 

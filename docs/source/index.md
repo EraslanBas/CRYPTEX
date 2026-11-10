@@ -1,7 +1,6 @@
 # CRYPTEX
 
-**EX**pression programs from **T**reatment **R**esponses **A**cross **C**ontexts
-via **T**ensors.
+**Identifiable discovery of gene programs from perturbation-by-context screens.**
 
 CRYPTEX finds the gene programs behind a perturbation screen that was run in
 several contexts (for example, the same CRISPR perturbations in different cell
