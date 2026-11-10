@@ -10,7 +10,7 @@ Reads, per shard, the ``PosteriorMean`` column of the ashr output and the
 label/gene/cell-count columns of the chunk it came from. Those align row for
 row, which is asserted here rather than assumed.
 
-    from extract.de import build_all_matrices
+    from cryptex.de import build_all_matrices
     summary = build_all_matrices(computese_dir, out_dir)
 """
 

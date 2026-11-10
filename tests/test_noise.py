@@ -5,9 +5,9 @@ import pandas as pd
 import pytest
 import torch
 
-from extract.data.noise import (NoiseModel, label_subspace, noise_covariance, pair_means,
+from cryptex.data.noise import (NoiseModel, label_subspace, noise_covariance, pair_means,
                                 pca_subspace, rca_subspace, within_pair_residuals)
-from extract.models import FixedBasisLoadings, GlobalLoadings
+from cryptex.models import FixedBasisLoadings, GlobalLoadings
 
 
 def _planted(n_pairs=600, G=60, d=3, r=2, n_rep=7, seed=0):
@@ -91,7 +91,7 @@ def test_fixed_basis_keeps_the_span():
 
 
 def test_fit_runs_in_each_subspace_mode():
-    from extract.train import TrainConfig, fit
+    from cryptex.train import TrainConfig, fit
     X, meta, *_ = _planted(n_pairs=80, G=30, n_rep=4)
     meta["context"] = np.where(np.arange(len(meta)) % 2, "C0", "C1")
     p = pd.factorize(meta.perturbation)[0]; c = pd.factorize(meta.context)[0]
@@ -163,11 +163,11 @@ def test_pca_subspace_is_the_top_svd_of_the_pair_means():
 
 
 def test_free_mode_can_start_where_the_fixed_mode_starts():
-    from extract.train import Extract, TrainConfig
+    from cryptex.train import Cryptex, TrainConfig
     V = np.random.default_rng(0).normal(size=(4, 30)).astype(np.float32)
     kw = dict(n_genes=30, n_perturbations=5, n_contexts=2, subspace_basis=V)
-    fixed = Extract(config=TrainConfig(pert_embedding_init="random", n_factors=4, subspace="fixed", axes_init="random", seed=3), **kw)
-    free = Extract(config=TrainConfig(pert_embedding_init="random", n_factors=4, subspace="free", free_init="basis",
+    fixed = Cryptex(config=TrainConfig(pert_embedding_init="random", n_factors=4, subspace="fixed", axes_init="random", seed=3), **kw)
+    free = Cryptex(config=TrainConfig(pert_embedding_init="random", n_factors=4, subspace="free", free_init="basis",
                                       axes_init="random", seed=3), **kw)
     assert torch.allclose(fixed.loadings.B, free.loadings.B, atol=1e-6)
     assert "loadings.B" in dict(free.named_parameters())

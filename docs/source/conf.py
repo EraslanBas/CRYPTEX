@@ -1,4 +1,4 @@
-"""Sphinx configuration for the EXTRACT documentation site.
+"""Sphinx configuration for the CRYPTEX documentation site.
 
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
@@ -12,12 +12,12 @@ sys.path.insert(0, os.path.abspath("../../src"))
 
 # -- Project information -----------------------------------------------------
 
-project = "EXTRACT"
+project = "CRYPTEX"
 author = "Basak Eraslan"
 copyright = f"{datetime.now():%Y}, {author}"
 
 try:  # keep the docs version in lockstep with the package
-    from extract import __version__ as release
+    from cryptex import __version__ as release
 except Exception:  # pragma: no cover - docs can build without the deps
     release = "0.1.0.dev0"
 version = release
@@ -62,7 +62,7 @@ html_title = f"{project} {version}"
 html_show_sourcelink = False
 
 html_theme_options = {
-    "github_url": "https://github.com/EraslanBas/EXTRACT",
+    "github_url": "https://github.com/EraslanBas/CRYPTEX",
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "navbar_align": "left",
     "show_toc_level": 2,
@@ -77,7 +77,7 @@ html_theme_options = {
 
 html_context = {
     "github_user": "EraslanBas",
-    "github_repo": "EXTRACT",
+    "github_repo": "CRYPTEX",
     "github_version": "main",
     "doc_path": "docs/source",
     "default_mode": "auto",

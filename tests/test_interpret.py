@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from extract.interpret import (
+from cryptex.interpret import (
     decompose_effects,
     loading_agreement,
     loadings_by_regression,

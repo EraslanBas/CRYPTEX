@@ -105,7 +105,7 @@ def generate_posterior_matrices(
         ``"linear"`` spreads sizes evenly in ``n``; ``"log"`` spreads them
         geometrically, covering *precision* more evenly since ``se`` scales as
         ``1/sqrt(n)``. See
-        :func:`~extract.de.arms.subsample_sizes`.
+        :func:`~cryptex.de.arms.subsample_sizes`.
     n_control_cells
         Size of the fixed control set for this context, shared by every row
         (full and subsampled alike). Defaults to 10,000. Controls beyond this

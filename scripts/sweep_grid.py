@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Train EXTRACT over a grid of (d, alpha, K, seed) on a saved split.
+"""Train CRYPTEX over a grid of (d, alpha, K, seed) on a saved split.
 
 With no model flags this trains the default configuration (see
-``extract.train.TrainConfig`` and docs/notes/CURRENT_MODEL.md). Loads
+``cryptex.train.TrainConfig`` and docs/notes/CURRENT_MODEL.md). Loads
 ``<split>/trainval`` ONCE and reuses it for every cell. Resumable: a cell whose
 row is already in ``sweep_metrics.csv`` (or, with ``--queue``, in ``cells/``) is
 skipped.
@@ -20,11 +20,11 @@ from pathlib import Path
 import numpy as np, pandas as pd, torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from extract import paths
-from extract.data.splits import (_pair_key, load_partition,
+from cryptex import paths
+from cryptex.data.splits import (_pair_key, load_partition,
                                        split_val_per_perturbation, subsample_mask)
-from extract.objectives import StratifiedNegativeSampler
-from extract.train import TrainConfig, evaluate, fit, prepare
+from cryptex.objectives import StratifiedNegativeSampler
+from cryptex.train import TrainConfig, evaluate, fit, prepare
 
 METRICS = ("auc", "disc", "recon", "accuracy", "lasso_objective", "programs_per_pair",
            "span_residual_median", "real_score_mean", "fake_score_mean")
@@ -146,7 +146,7 @@ def _val_scores(model, fa, rows, batch=4096, seed=12345) -> dict:
         np.arange(len(rows)), np.random.default_rng(seed))
     model.eval()
     t = lambda a: torch.from_numpy(np.asarray(a)).to(device)
-    from extract.models.group_lasso import group_batches, lasso_groups
+    from cryptex.models.group_lasso import group_batches, lasso_groups
     gkey = lasso_groups(fa["perturbation_idx"], fa["context_idx"], model.config.lasso_groups)
     lasso = model.config.coding == "group_lasso"
 
@@ -220,7 +220,7 @@ def main() -> int:
                     help="start context embeddings at random or at the PCA of each context's "
                          "control-cell mean expression (--context-means); adds _ctxctrl")
     ap.add_argument("--context-means", type=Path, default=None,
-                    help="contexts x genes control means (default $EXTRACT_ROOT/context_control_means.parquet, "
+                    help="contexts x genes control means (default $CRYPTEX_ROOT/context_control_means.parquet, "
                          "from scripts/context_control_means.py)")
     ap.add_argument("--pert-embedding-init", choices=["random", "response"], default="response",
                     help="start perturbation embeddings at random or from how each target "
@@ -293,8 +293,8 @@ def main() -> int:
     if args.perturbation_half is not None and args.shared_subspace:
         # V from the training pairs of both halves; each half's validation pairs are
         # drawn exactly as that half's own run draws them, so none of them enter V
-        from extract.data.splits import perturbation_half
-        from extract.data.noise import pca_subspace
+        from cryptex.data.splits import perturbation_half
+        from cryptex.data.noise import pca_subspace
         if args.subspace_method != "pca":
             raise SystemExit("--shared-subspace supports --subspace-method pca only")
         pair_all = (mtv.perturbation.astype(str) + "|" + mtv.context.astype(str)).to_numpy()
@@ -310,7 +310,7 @@ def main() -> int:
             np.save(args.out_dir / f"subspace_V_pca_d{d_}_shared_halves_s{args.half_seed}.npy", Vb)
         print(f"shared subspace from {int(shared_train.sum()):,} training rows of both halves", flush=True)
     if args.perturbation_half is not None:
-        from extract.data.splits import perturbation_half
+        from cryptex.data.splits import perturbation_half
         keep_h = perturbation_half(mtv.perturbation.to_numpy(), args.perturbation_half, args.half_seed)
         Xtv, mtv = Xtv[keep_h], mtv[keep_h].reset_index(drop=True)
         print(f"perturbation half {args.perturbation_half} (seed {args.half_seed}): "
@@ -324,7 +324,7 @@ def main() -> int:
     # ---- the subspace V (train pairs only) ------------------------------------
     bases = {}
     if set(args.subspace) - {"free"} or args.free_init == "basis":
-        from extract.data.noise import (label_subspace, noise_covariance, pair_means,
+        from cryptex.data.noise import (label_subspace, noise_covariance, pair_means,
                                         pca_subspace, rca_subspace, within_pair_residuals)
         t1 = time.time()
         train_real = ~val_all
@@ -410,7 +410,7 @@ def main() -> int:
         plev, clev = fa.pop("perturbation_levels"), fa.pop("context_levels")
         ctx_init = None
         if args.context_embedding_init == "control-means":
-            from extract.train import control_mean_embeddings
+            from cryptex.train import control_mean_embeddings
             cm = pd.read_parquet(args.context_means or paths.root() / "context_control_means.parquet")
             ctx_init = control_mean_embeddings(cm, clev, args.context_embedding_dim)
         cfg = TrainConfig(n_factors=d, alpha=a, seed=seed,

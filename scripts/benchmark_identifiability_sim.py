@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Ground-truth identifiability benchmark: EXTRACT (fixed and free) vs PCA, ICA.
+"""Ground-truth identifiability benchmark: CRYPTEX (fixed and free) vs PCA, ICA.
 
 Adapted from a collaborator's EXTRACT_identifiability_sim.py: the simulation,
 validation split and metrics are theirs; this version runs the current
-EXTRACT code in both modes and adds a realistic-noise option.
+CRYPTEX code in both modes and adds a realistic-noise option.
 
     PYTHONPATH=src python scripts/benchmark_identifiability_sim.py --out sim_bench
 
@@ -29,9 +29,9 @@ noise    isotropic: Sigma_cell = 1.5^2 I (the collaborator's setting).
 
 Methods (all scored against B_true)
 -----------------------------------
-EXTRACT fixed   the default model: V from the training rows, B = A V.
-EXTRACT free    B learned directly; alpha = c / mean(x^2), c in --alphas.
-EXTRACT <lm>    fixed mode with a structured label model, lm in --label-models:
+CRYPTEX fixed   the default model: V from the training rows, B = A V.
+CRYPTEX free    B learned directly; alpha = c / mean(x^2), c in --alphas.
+CRYPTEX <lm>    fixed mode with a structured label model, lm in --label-models:
                 product lambda_k = f_k(p) g_k(c); ammi a_k(p) + b_k(c) + f_k(p) g_k(c).
 V (frozen)      the label-driven subspace with its initial axes, no training.
 PCA, FastICA    scikit-learn on training full-data rows (ICA: 3 seeds).
@@ -261,7 +261,7 @@ def main():
     ap.add_argument("--perts", type=int, default=200)
     ap.add_argument("--contexts", type=int, default=6)
     ap.add_argument("--subsamples", type=int, default=4)
-    ap.add_argument("--noise-rank", type=int, default=10, help="shared-noise rank EXTRACT fits for V")
+    ap.add_argument("--noise-rank", type=int, default=10, help="shared-noise rank CRYPTEX fits for V")
     ap.add_argument("--alphas", type=float, nargs="+", default=[1.0, 10.0], help="free mode: alpha = c / mean(x^2)")
     ap.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2])
     ap.add_argument("--data-seed", type=int, default=0)
@@ -276,8 +276,8 @@ def main():
 
     global TrainConfig, fit, match_factors, PCA, FastICA
     import torch
-    from extract.train import TrainConfig, fit
-    from extract.evaluation.stability import match_factors
+    from cryptex.train import TrainConfig, fit
+    from cryptex.evaluation.stability import match_factors
     from sklearn.decomposition import PCA, FastICA
     torch.set_num_threads(a.threads)
     warnings.filterwarnings("ignore", category=UserWarning)

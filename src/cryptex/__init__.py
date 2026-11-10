@@ -1,4 +1,4 @@
-"""extract -- identifiable gene programs from perturbation x context screens.
+"""cryptex -- identifiable gene programs from perturbation x context screens.
 
 The model, in one line:
 
@@ -30,7 +30,7 @@ The objective (``train``):
    each row of ``B``) and a hinge that forbids near-collinear programs.
 
 Full specification: the documentation (``docs/source/index.md``,
-https://eraslanbas.github.io/EXTRACT/).
+https://eraslanbas.github.io/CRYPTEX/).
 """
 
 __version__ = "0.1.0.dev0"

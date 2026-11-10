@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from extract.evaluation import (
+from cryptex.evaluation import (
     match_factors,
     reconstruction_score,
     split_context_holdout,

@@ -5,8 +5,8 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from extract.models.loadings import gene_concentration
-from extract.train import TrainConfig, fit
+from cryptex.models.loadings import gene_concentration
+from cryptex.train import TrainConfig, fit
 
 
 def test_concentration_is_the_top_k_share():
@@ -62,7 +62,7 @@ def test_val_total_is_the_training_objective_term_by_term():
 
 
 def test_l1_sparseness_and_collinearity_hinge():
-    from extract.models.loadings import collinearity_hinge, l1_sparseness
+    from cryptex.models.loadings import collinearity_hinge, l1_sparseness
     B = torch.tensor([[1.0, 0, 0, 0], [1.0, 1, 1, 1], [1.0, 0.1, 0, 0]])
     assert torch.allclose(l1_sparseness(B), torch.tensor([0.5, 1.0, 1.1 / (np.sqrt(1.01) * 2)], dtype=B.dtype))
     # rows 0 and 2 are nearly collinear (cos 0.995); rows 0 and 1 have cos 0.5

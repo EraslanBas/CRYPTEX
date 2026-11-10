@@ -19,7 +19,7 @@ They are standalone CLIs, not importable helpers -- driven by
 Usage::
 
     OUT_BASE=data/posterior_matrices \\
-      src/extract/de/RunAshrPipeline.sh /path/to/one.h5ad /path/to/two.h5ad
+      src/cryptex/de/RunAshrPipeline.sh /path/to/one.h5ad /path/to/two.h5ad
 
 **Requires R with ``ashr``.** It is not installed in this environment; step 2
 fails without ``R -e 'install.packages("ashr")'``.

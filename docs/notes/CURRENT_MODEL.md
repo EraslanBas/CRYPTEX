@@ -1,4 +1,4 @@
-# Current EXTRACT configuration (defaults on `main`, updated 2026-10-28)
+# Current CRYPTEX configuration (defaults on `main`, updated 2026-10-28)
 
 Chosen from the 90-model comparison on the no-MT data (`sweep_jdstats_d20_noMT/`). Running
 `scripts/sweep_grid.py` with no model flags reproduces it exactly.
@@ -29,6 +29,6 @@ Done:
 - 2026-10-25: negatives drawn in proportion to their rows (label-only term could otherwise learn cell counts).
 - 2026-10-26: per-row lasso vs group lasso on the halves test, in `sweep_rowlasso_d20_noMT/`: per-row cross-half 0.81 (lambda 0.0272) / 0.81 (0.0544, 10 axes > 0.9) vs group 0.79, at lower validation AUC (0.78 / 0.74 vs 0.80). Per-row lasso made the default 2026-10-28.
 
-- 2026-10-29: sweep 1 (1000 epochs) on cross-half agreement, d {10, 15, 20} x lambda {0.5, 1, 2, 4} x the per-row scale x gamma {0, 0.05, 0.15}, shared V, seed 0 per half, in `sweep1_rowlasso_d_lambda_gamma/` (code 9cd81e3); analysis in `notebooks/extract/08_Sweep1_Hyperparameters.ipynb`. Most reproduced programs: d 20, lambda x2 (0.0258), gamma 0.15 (14 of 20 above 0.9). Agreement does not rise with validation AUC; AUC is set by lambda (sparsity). Test set read once for all 72 models (exploration, not used for selection).
+- 2026-10-29: sweep 1 (1000 epochs) on cross-half agreement, d {10, 15, 20} x lambda {0.5, 1, 2, 4} x the per-row scale x gamma {0, 0.05, 0.15}, shared V, seed 0 per half, in `sweep1_rowlasso_d_lambda_gamma/` (code 9cd81e3); analysis in `notebooks/cryptex/08_Sweep1_Hyperparameters.ipynb`. Most reproduced programs: d 20, lambda x2 (0.0258), gamma 0.15 (14 of 20 above 0.9). Agreement does not rise with validation AUC; AUC is set by lambda (sparsity). Test set read once for all 72 models (exploration, not used for selection).
 
 Running (started 2026-10-29): the same sweep at 2000 epochs, in `sweep2_rowlasso_2000ep/`, to see whether AUC, agreement or the programs keep changing after epoch 1000.

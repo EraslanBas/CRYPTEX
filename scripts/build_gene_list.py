@@ -20,8 +20,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from extract import paths
-from extract.data import compute_gene_list, filter_summary
+from cryptex import paths
+from cryptex.data import compute_gene_list, filter_summary
 
 
 def main() -> None:

@@ -170,7 +170,7 @@ def label_subspace_from_rows(
     rows among ``rows`` (the training rows): within-pair residuals for the
     noise, pair means for the signal. Uses only the matrix and the
     ``(perturbation, context)`` labels -- no cell counts, and no row of a pair
-    is treated as better than another. What :func:`extract.train.fit` uses when
+    is treated as better than another. What :func:`cryptex.train.fit` uses when
     ``subspace="fixed"`` and no basis is given."""
     pair = np.asarray(perturbation_idx, dtype=np.int64) * (int(np.max(context_idx)) + 1) \
         + np.asarray(context_idx, dtype=np.int64)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mean log-normalised expression of each context's control cells (the 100k
 the logFCs were computed against), over the genes of a split; then PCA of the
-contexts x genes matrix. Writes $EXTRACT_ROOT/context_control_means.parquet,
+contexts x genes matrix. Writes $CRYPTEX_ROOT/context_control_means.parquet,
 which sweep_grid.py --context-embedding-init control-means reads.
 
     python scripts/context_control_means.py"""

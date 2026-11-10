@@ -1,5 +1,5 @@
 ---
-title: "How control expression is generated in EXTRACT"
+title: "How control expression is generated in CRYPTEX"
 subtitle: "`SRC/ControlDataGenerator.py` — step-by-step derivation"
 date: ""
 geometry: "margin=2.2cm"

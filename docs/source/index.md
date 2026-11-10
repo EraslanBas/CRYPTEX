@@ -1,9 +1,9 @@
-# EXTRACT
+# CRYPTEX
 
 **EX**pression programs from **T**reatment **R**esponses **A**cross **C**ontexts
 via **T**ensors.
 
-EXTRACT finds the gene programs behind a perturbation screen that was run in
+CRYPTEX finds the gene programs behind a perturbation screen that was run in
 several contexts (for example, the same CRISPR perturbations in different cell
 types). It learns a small set of programs, groups of genes that move together,
 shared by the whole screen, and tells you which programs each perturbation
@@ -43,12 +43,12 @@ space the programs are $\mathbf B = \mathbf A\mathbf V$, and only the small
 matrix $\mathbf A$ is learned.
 
 **Where they start.** The contexts change how strongly perturbations vary
-along each program. EXTRACT starts from the axes along which these differences
+along each program. CRYPTEX starts from the axes along which these differences
 between contexts are cleanest (joint diagonalisation of the contexts'
 covariances). These axes are found from the data alone, before training.
 
 **Few programs per response.** A perturbation is expected to act on a few
-processes, not on everything. EXTRACT therefore describes every response with
+processes, not on everything. CRYPTEX therefore describes every response with
 as few programs as it can (a lasso), and a perturbation may use different
 programs in different contexts. Each row is fitted on its own, so it is one
 data point: its activities depend on that row alone, not on the other rows of
@@ -64,7 +64,7 @@ each program is judged on its own, programs that correspond to separate
 processes make the task easier than mixtures of them.
 
 **Few genes per program, and distinct programs.** A gene program is expected
-to involve a limited set of genes. EXTRACT therefore rewards programs whose
+to involve a limited set of genes. CRYPTEX therefore rewards programs whose
 weight is concentrated on few genes (up- or down-regulated), and, so that
 several programs cannot crowd onto the same genes, it forbids any two programs
 from pointing in nearly the same direction. Programs may still share genes.
@@ -107,7 +107,7 @@ $\mathbf z$ to be the programs rather than an arbitrary rotation of them.
 
 This is two problems: *which subspace* the programs span, and *which axes*
 inside it are the programs. Any rotation of the axes inside a subspace fits the
-data equally well, so the axes need information beyond the fit. EXTRACT uses
+data equally well, so the axes need information beyond the fit. CRYPTEX uses
 three sources of it:
 
 1. **The subspace** is the span of the top principal components $\mathbf V$
@@ -208,7 +208,7 @@ therefore separates two questions: how stable the subspace is, and how stably
 the axes are chosen inside a given subspace (both halves using one
 $\mathbf V$).
 
-`fit()` computes $\mathbf V$ automatically (`extract.data.noise.pca_subspace`); a
+`fit()` computes $\mathbf V$ automatically (`cryptex.data.noise.pca_subspace`); a
 precomputed basis can also be passed in.
 
 ### Starting axes: joint diagonalisation across contexts
@@ -248,12 +248,12 @@ profiles differ (second-order blind source separation).
 This start is deterministic and uses only training data. How much signal is
 behind it can be checked by computing it separately on two halves of the
 perturbations and comparing the axes. Training then refines the axes
-with the two criteria below (`extract.train.jd_axes`, `axes_init="jd"`).
+with the two criteria below (`cryptex.train.jd_axes`, `axes_init="jd"`).
 
 ### Activities: a lasso per row
 
 The activities of a row are not a plain projection. For each row $\mathbf x$,
-EXTRACT solves
+CRYPTEX solves
 
 $$
 \min_{\mathbf z}\;
@@ -308,7 +308,7 @@ rows independently; it is kept only for comparison.
 ### Architecture
 
 There are three learned parts and no encoder: the loadings $\mathbf B$, a
-label network, and a per-component head (`extract.train.Extract`).
+label network, and a per-component head (`cryptex.train.Cryptex`).
 
 ```{raw} html
 <div class="ex-figure">
@@ -409,7 +409,7 @@ target gene's starting embedding, rescaled to the size of a random start. Genes
 affected alike by many perturbations tend to sit in the same pathway, so their
 knockouts start close together. Only training pairs are used, so validation and
 test pairs never shape an embedding. Perturbations whose target is not among the
-response genes start at random. (`extract.train.response_embeddings`.)
+response genes start at random. (`cryptex.train.response_embeddings`.)
 
 **Starting context embeddings: the control cells.** A context's embedding
 starts from the mean expression of its control (non-targeting) cells: the
@@ -420,7 +420,7 @@ context's scores on the top components (as many as the embedding size), rescaled
 logFC are measured against each context's own controls, so the context's direct
 effect on expression is removed from the data; what the control cells add is
 the cell state the context creates, which shapes how perturbations act.
-(`extract.train.control_mean_embeddings`, computed by
+(`cryptex.train.control_mean_embeddings`, computed by
 `scripts/context_control_means.py`.)
 
 Both kinds of embedding are only starting points and are trained further.
@@ -684,9 +684,9 @@ the read is logged.
 |---|---|
 | held-out AUC | Can the model tell an unseen $(p, c)$ from a wrong label? A lookup table scores 0.5. |
 | programs per row | How many programs the lasso uses for a held-out row. |
-| reconstruction | Masked squared error per gene of $\mathbf z\mathbf B$, with the lasso activities; `extract.evaluation.reconstruction` also gives the fraction of squared norm recovered by $\operatorname{span}(\mathbf B)$ (least-squares activities). |
+| reconstruction | Masked squared error per gene of $\mathbf z\mathbf B$, with the lasso activities; `cryptex.evaluation.reconstruction` also gives the fraction of squared norm recovered by $\operatorname{span}(\mathbf B)$ (least-squares activities). |
 | span residual $r$ | $\|\mathbf m \odot (\mathbf x - \mathbf x\mathbf B^{+}\mathbf B)\| / \|\mathbf m \odot \mathbf x\|$: do held-out rows need programs outside $\operatorname{span}(\mathbf B)$? |
-| seed agreement | Matched $|\cos|$ between the programs of models trained with different seeds or on different data (Hungarian matching, no centring; `extract.evaluation.stability`), against the agreement of two random sets of axes in $\mathbf V$. |
+| seed agreement | Matched $|\cos|$ between the programs of models trained with different seeds or on different data (Hungarian matching, no centring; `cryptex.evaluation.stability`), against the agreement of two random sets of axes in $\mathbf V$. |
 
 ### Reading the factors
 
@@ -749,12 +749,12 @@ validation.
 
 | Path | Contents |
 |---|---|
-| `extract/de/` | Welch statistics → `ashr` → merge → pivot; full-data and disjoint pseudobulk rows; matrix assembly |
-| `extract/data/` | `noise.py` the subspace $\mathbf V$ (PCA of pair means; signal-to-noise variants); `splits.py` test pairs, validation, the low-cell filter, gene lists |
-| `extract/models/` | `loadings.py` $\mathbf B = \mathbf A\mathbf V$ and projections; `group_lasso.py` the lasso solver (per row, or per pair as a group lasso); `heads.py` the per-component head; `label_net.py` |
-| `extract/objectives/` | `contrastive.py` label-swap sampler and BCE; `reconstruction.py` the masked squared error |
-| `extract/train.py` | `TrainConfig`, `Extract`, `fit`, `evaluate`, `jd_axes`, embedding starts, `load_model` |
-| `extract/interpret/` | loadings, sign anchoring, effect decomposition, enrichment export |
-| `extract/evaluation/` | held-out reconstruction, span residual, cross-seed stability |
+| `cryptex/de/` | Welch statistics → `ashr` → merge → pivot; full-data and disjoint pseudobulk rows; matrix assembly |
+| `cryptex/data/` | `noise.py` the subspace $\mathbf V$ (PCA of pair means; signal-to-noise variants); `splits.py` test pairs, validation, the low-cell filter, gene lists |
+| `cryptex/models/` | `loadings.py` $\mathbf B = \mathbf A\mathbf V$ and projections; `group_lasso.py` the lasso solver (per row, or per pair as a group lasso); `heads.py` the per-component head; `label_net.py` |
+| `cryptex/objectives/` | `contrastive.py` label-swap sampler and BCE; `reconstruction.py` the masked squared error |
+| `cryptex/train.py` | `TrainConfig`, `Cryptex`, `fit`, `evaluate`, `jd_axes`, embedding starts, `load_model` |
+| `cryptex/interpret/` | loadings, sign anchoring, effect decomposition, enrichment export |
+| `cryptex/evaluation/` | held-out reconstruction, span residual, cross-seed stability |
 | `baselines/` | PCA, linear ICA, context joint diagonalisation |
 | `scripts/` | build the split (`build_split.py`), train models (`sweep_grid.py`; `fit_model.py` for one), read test once (`read_test.py`) |

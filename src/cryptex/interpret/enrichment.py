@@ -4,7 +4,7 @@ Deliberately thin: this writes the ranked lists and defers to the existing KEGG
 ORA pipeline in ``ChemoGeneticScreens`` rather than reimplementing enrichment.
 
 Run the two tails separately. Factor sign is arbitrary unless anchored
-(:func:`extract.interpret.loadings.anchor_signs`), so an unsigned or
+(:func:`cryptex.interpret.loadings.anchor_signs`), so an unsigned or
 mis-oriented single list will conflate "genes this factor raises" with "genes it
 lowers".
 """

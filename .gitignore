@@ -1,8 +1,8 @@
 # ---- Large data artifacts ----
-# data/ and results/ now live under $EXTRACT_ROOT on large_storage
+# data/ and results/ now live under $CRYPTEX_ROOT on large_storage
 # (see docs/data_layout.md); these entries guard against re-creating them here.
 # NOTE the leading slash: an unanchored `data/` matches a directory of that name
-# at ANY depth, which silently untracked the whole src/extract/data/
+# at ANY depth, which silently untracked the whole src/cryptex/data/
 # source package. Keep these anchored to the repo root.
 /data/
 /results/

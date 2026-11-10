@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""CLI for extract.de.build_all_matrices.
+"""CLI for cryptex.de.build_all_matrices.
 
 Assembles per-context (label x gene) matrices of ashr-shrunken logFC. All the
 logic lives in the package; this is only argument parsing.
@@ -16,9 +16,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from extract import paths
+from cryptex import paths
 
-from extract.de import build_all_matrices
+from cryptex.de import build_all_matrices
 
 
 def main() -> int:

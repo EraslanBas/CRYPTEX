@@ -63,7 +63,7 @@ class PerComponentHead(nn.Module):
         non-quadratic statistic or the head is rotation invariant.
     normaliser
         Also take a label-only term ``c_k(u)`` per component from the label
-        network and subtract it (``Extract`` always uses it).
+        network and subtract it (``Cryptex`` always uses it).
     """
 
     def __init__(self, basis: Sequence[str] = DEFAULT_BASIS, normaliser: bool = False):
@@ -119,7 +119,7 @@ class PerComponentHead(nn.Module):
         lam
             [batch, n_factors, n_outputs] label-derived coefficients theta (and,
             with the normaliser, c_k last) from
-            :class:`~extract.models.label_net.FactorizedLabelNet`.
+            :class:`~cryptex.models.label_net.FactorizedLabelNet`.
 
         Returns
         -------

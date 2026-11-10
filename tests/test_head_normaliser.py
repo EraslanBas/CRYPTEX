@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 import torch
 
-from extract.models import PerComponentHead
-from extract.train import TrainConfig, fit
+from cryptex.models import PerComponentHead
+from cryptex.train import TrainConfig, fit
 
 
 def _lam(zhat, c=None):

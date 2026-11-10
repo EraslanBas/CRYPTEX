@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fit ONE EXTRACT model on a saved split (scripts/build_split.py).
+"""Fit ONE CRYPTEX model on a saved split (scripts/build_split.py).
 
 A thin front end to ``scripts/sweep_grid.py`` for a single configuration and
 seed: the same loading, defaults and saved outputs (model, configuration,

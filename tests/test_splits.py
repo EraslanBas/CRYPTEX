@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from extract.data.splits import (
+from cryptex.data.splits import (
     build_split,
     draw_test_pairs,
     load_partition,
@@ -181,7 +181,7 @@ def test_fit_model_and_the_single_test_read(tmp_path):
 
 
 def test_perturbation_halves_partition_the_perturbations():
-    from extract.data.splits import perturbation_half
+    from cryptex.data.splits import perturbation_half
     perts = np.repeat([f"G{i}" for i in range(41)], 3)          # 3 contexts per perturbation
     h0, h1 = perturbation_half(perts, 0, seed=1), perturbation_half(perts, 1, seed=1)
     assert (h0 ^ h1).all()                                       # every row in exactly one half

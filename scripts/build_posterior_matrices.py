@@ -28,9 +28,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from extract import paths
+from cryptex import paths
 
-from extract.de import context_path, generate_posterior_matrices, run_screen
+from cryptex.de import context_path, generate_posterior_matrices, run_screen
 
 #: The 16 contexts of the chemogenetic screen. Listed rather than globbed: the
 #: source directory also holds Round-1 contexts (CHIR, DMSO, KYA, LDN, PFI1,

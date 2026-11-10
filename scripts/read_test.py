@@ -27,9 +27,9 @@ import pandas as pd
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from extract.data.splits import load_partition
-from extract.objectives import StratifiedNegativeSampler
-from extract.train import evaluate, load_model, prepare
+from cryptex.data.splits import load_partition
+from cryptex.objectives import StratifiedNegativeSampler
+from cryptex.train import evaluate, load_model, prepare
 
 SHOW = ["auc", "accuracy", "disc", "recon", "lasso_objective", "programs_per_pair",
         "span_residual_median"]

@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 import torch
 
-from extract.models.group_lasso import (
+from cryptex.models.group_lasso import (
     group_batches, group_keys, group_lasso_codes, group_penalty)
-from extract.train import TrainConfig, evaluate, fit, encode
+from cryptex.train import TrainConfig, evaluate, fit, encode
 
 
 def _planted(n_pairs=40, rows=6, d=8, G=60, k=2, seed=0):
@@ -104,7 +104,7 @@ def test_fit_and_evaluate_with_the_group_lasso(subspace):
 def test_row_lasso_activities_depend_on_the_row_alone():
     """With lasso_groups="row" a row's activities do not change when the other
     rows of its pair change or are dropped."""
-    from extract.models.group_lasso import lasso_groups
+    from cryptex.models.group_lasso import lasso_groups
     X, B, groups, _ = _planted(n_pairs=4)
     p = groups.numpy()                      # the pair ids
     g = torch.as_tensor(lasso_groups(p, np.zeros_like(p), "row"))
@@ -121,7 +121,7 @@ def test_fit_with_the_row_lasso():
                       axes_init="random", eval_every=2, lasso_lambda=0.05, lasso_steps=10, lasso_groups="row")
     model, history = fit(X, p, c, config=cfg, train_rows=~val, val_rows=val)
     assert all(h["lasso_penalty"] > 0 for h in history)
-    from extract.models.group_lasso import lasso_groups
+    from cryptex.models.group_lasso import lasso_groups
     Z = encode(model, X, groups=lasso_groups(p, c, "row"))
     assert np.array_equal(Z, encode(model, X))        # per row: no groups needed
     nz = (Z != 0).sum(1)

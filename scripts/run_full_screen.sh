@@ -7,7 +7,7 @@ PY=${PY:-/home/beraslan/miniconda/envs/py312/bin/python}
 ROOT=${ROOT:-/home/beraslan/Projects/ModuleFinder}
 SCREEN=${SCREEN:-/processed_datasets/VCI/ChemoGenetic_H1_Basak}
 OUT=${OUT:-/large_storage/ctc/beraslan/ModuleFinder/computese}
-ASHR=$ROOT/src/extract/de/run_ashr_on_chunk.R
+ASHR=$ROOT/src/cryptex/de/run_ashr_on_chunk.R
 
 SE_JOBS=${SE_JOBS:-3}       # ComputeSE is memory-bound (~60 GB/shard)
 ASHR_JOBS=${ASHR_JOBS:-6}   # ashr is time-bound (~30-50 GB/shard)

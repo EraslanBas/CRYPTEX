@@ -3,7 +3,7 @@ import torch
 
 import pytest
 
-from extract.models import FactorizedLabelNet, PerComponentHead
+from cryptex.models import FactorizedLabelNet, PerComponentHead
 
 
 def test_purely_quadratic_basis_rejected():

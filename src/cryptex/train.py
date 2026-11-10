@@ -1,4 +1,4 @@
-"""EXTRACT: the model and its training loop.
+"""CRYPTEX: the model and its training loop.
 
     L = L_disc + alpha * L_lasso + gamma * L_genes + mu * L_distinct
 
@@ -72,7 +72,7 @@ class TrainConfig:
     #: directions whose values agree most between different rows of the same
     #: pair, relative to their total variance; Dmochowski et al.), R_W truncated
     #: to its top ``rca_rank`` eigen-directions. ``"snr"``: between-pair signal
-    #: over the within-pair noise model. See extract.data.noise.
+    #: over the within-pair noise model. See cryptex.data.noise.
     subspace_method: str = "pca"
     rca_rank: int = 100
     #: Rank of the correlated part of the noise model (``"snr"``), and the
@@ -148,7 +148,7 @@ class TrainConfig:
     log_every: int = 10
 
 
-class Extract(nn.Module):
+class Cryptex(nn.Module):
     """One global loading matrix, a per-component head, and a label network.
 
     There is no encoder and no label prior. ``B`` is the only factor->gene map;
@@ -366,10 +366,10 @@ def fit(
     config: TrainConfig | None = None,
     train_rows: np.ndarray | None = None,
     val_rows: np.ndarray | None = None,
-    on_eval: Callable[[int, Extract], None] | None = None,
+    on_eval: Callable[[int, Cryptex], None] | None = None,
     subspace_basis: np.ndarray | None = None,
     context_embedding_init: np.ndarray | None = None,
-) -> tuple[Extract, list[dict]]:
+) -> tuple[Cryptex, list[dict]]:
     """Fit the model. Returns ``(model, history)``.
 
     Parameters
@@ -385,8 +385,8 @@ def fit(
         subsample index, and no row is treated as the most precise.
     train_rows, val_rows
         Boolean masks over rows, split at the (perturbation, context) pair level
-        (:func:`extract.data.splits.split_val_per_perturbation`, or
-        :func:`extract.data.splits.make_split` for an in-memory table). All
+        (:func:`cryptex.data.splits.split_val_per_perturbation`, or
+        :func:`cryptex.data.splits.make_split` for an in-memory table). All
         rows of a held-out pair move together. ``None`` trains on everything.
 
         **Validation, not test.** ``fit`` looks at ``val_rows`` repeatedly, to
@@ -475,7 +475,7 @@ def fit(
     if config.axes_init == "jd" and subspace_basis is not None:
         # (free mode with a random B has no axes to start: nothing to do)
         axes0 = jd_axes(X, perturbation_idx, context_idx, train_idx, subspace_basis)
-    model = Extract(
+    model = Cryptex(
         n_genes=n_genes,
         n_perturbations=n_perturbations,
         n_contexts=n_contexts,
@@ -738,7 +738,7 @@ def fit(
 
 @torch.no_grad()
 def evaluate(
-    model: Extract,
+    model: Cryptex,
     X_t: torch.Tensor,
     perturbation_idx: np.ndarray,
     context_idx: np.ndarray,
@@ -892,7 +892,7 @@ def prepare(
     perturbation_levels: np.ndarray | None = None,
     context_levels: np.ndarray | None = None,
 ) -> dict:
-    """Turn ``(X, meta)`` from :func:`extract.de.load_matrices` into
+    """Turn ``(X, meta)`` from :func:`cryptex.de.load_matrices` into
     :func:`fit` arguments.
 
     ``meta`` needs ``perturbation`` and ``context`` (and ``label`` only through
@@ -939,7 +939,7 @@ def prepare(
 
 @torch.no_grad()
 def encode(
-    model: Extract, X: np.ndarray, target_col: np.ndarray | None = None,
+    model: Cryptex, X: np.ndarray, target_col: np.ndarray | None = None,
     groups: np.ndarray | None = None,
 ) -> np.ndarray:
     """Factor activations ``Z`` for all rows of ``X`` (``groups``: the rows'
@@ -958,7 +958,7 @@ def encode(
 
 @torch.no_grad()
 def reconstruct(
-    model: Extract, X: np.ndarray, target_col: np.ndarray | None = None,
+    model: Cryptex, X: np.ndarray, target_col: np.ndarray | None = None,
     groups: np.ndarray | None = None,
 ) -> np.ndarray:
     """``X_hat = z B`` with ``z`` the activities of ``X`` (as :func:`encode`)."""
@@ -975,7 +975,7 @@ def reconstruct(
 
 
 __all__ = [
-    "Extract",
+    "Cryptex",
     "evaluate",
     "TrainConfig",
     "fit",
@@ -986,7 +986,7 @@ __all__ = [
 ]
 
 
-def load_model(sweep_dir, tag: str, which: str = "best", device: str = "cpu") -> Extract:
+def load_model(sweep_dir, tag: str, which: str = "best", device: str = "cpu") -> Cryptex:
     """Rebuild a model saved by ``scripts/sweep_grid.py`` from
     ``config_<tag>.json`` and ``model_<which>_<tag>.pt`` (``which`` is
     ``"best"``, the selected epoch, or ``"final"``, the last one). The fixed
@@ -1006,7 +1006,7 @@ def load_model(sweep_dir, tag: str, which: str = "best", device: str = "cpu") ->
     state = torch.load(sweep_dir / f"model_{which}_{tag}.pt", map_location=device)
     # any basis of the right shape will do: the saved state overwrites it
     basis = (state["loadings.V"] if "loadings.V" in state else state["loadings.B"]).numpy()
-    model = Extract(n_genes=cfg_d["n_genes"], n_perturbations=cfg_d["n_perturbations"],
+    model = Cryptex(n_genes=cfg_d["n_genes"], n_perturbations=cfg_d["n_perturbations"],
                     n_contexts=cfg_d["n_contexts"], config=config, subspace_basis=basis)
     model.load_state_dict(state)
     return model.to(device).eval()

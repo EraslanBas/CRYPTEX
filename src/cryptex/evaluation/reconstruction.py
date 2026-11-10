@@ -1,8 +1,8 @@
 """How well a set of gene loadings reconstructs held-out responses.
 
-One function, used for EXTRACT and for every baseline, so the numbers are
+One function, used for CRYPTEX and for every baseline, so the numbers are
 comparable: each row is projected onto ``span(B)`` by masked least squares (the
-on-target entry excluded, exactly as EXTRACT projects), reconstructed as
+on-target entry excluded, exactly as CRYPTEX projects), reconstructed as
 ``z B``, and scored on the retained entries. Zero is the reference -- rows are
 log-fold changes against within-context controls, so no mean is added back.
 

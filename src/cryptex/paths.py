@@ -1,12 +1,12 @@
-"""Canonical locations for EXTRACT data.
+"""Canonical locations for CRYPTEX data.
 
 The repository holds *code only*. Every data artifact -- screen intermediates,
 posterior-mean matrices, augmented tables, simulator output -- lives under a
 single root on large_storage.
 
-Override the root with the ``EXTRACT_ROOT`` environment variable::
+Override the root with the ``CRYPTEX_ROOT`` environment variable::
 
-    export EXTRACT_ROOT=/some/other/place
+    export CRYPTEX_ROOT=/some/other/place
 
 Layout::
 
@@ -28,9 +28,10 @@ DEFAULT_ROOT = "/large_storage/ctc/beraslan/ModuleFinder"
 
 
 def root() -> Path:
-    """Data root; ``EXTRACT_ROOT`` (or the older ``MODULEFINDER_ROOT``) wins
-    over :data:`DEFAULT_ROOT`."""
-    return Path(os.environ.get("EXTRACT_ROOT")
+    """Data root; ``CRYPTEX_ROOT`` (or the older ``EXTRACT_ROOT`` / ``MODULEFINDER_ROOT``)
+    wins over :data:`DEFAULT_ROOT`."""
+    return Path(os.environ.get("CRYPTEX_ROOT")
+                or os.environ.get("EXTRACT_ROOT")
                 or os.environ.get("MODULEFINDER_ROOT")
                 or DEFAULT_ROOT)
 

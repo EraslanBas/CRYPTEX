@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from scipy.optimize import linear_sum_assignment
 
-from extract.train import TrainConfig, fit, jd_axes
+from cryptex.train import TrainConfig, fit, jd_axes
 
 
 def _context_variance_data(d=5, G=50, n_p=300, n_c=6, seed=0):

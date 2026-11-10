@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "extract-screens"
+name = "cryptex-screens"
 version = "0.1.0.dev0"
 description = "Identifiable latent factors from perturbation x context screens"
 requires-python = ">=3.10"
@@ -22,11 +22,10 @@ dependencies = [
 baselines = ["mofapy2", "h5py"]
 dev = ["pytest>=7", "ruff"]
 
-# The distribution is `extract-screens`; the import name is `extract`. An
-# unrelated package called `extract` exists on PyPI -- do not install both.
+# The distribution is `cryptex-screens`; the import name is `cryptex`.
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["extract*", "perturbseq_sim*", "baselines*"]
+include = ["cryptex*", "perturbseq_sim*", "baselines*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

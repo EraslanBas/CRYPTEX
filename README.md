@@ -1,9 +1,9 @@
-# EXTRACT
+# CRYPTEX
 
 **EX**pression programs from **T**reatment **R**esponses **A**cross **C**ontexts
 via **T**ensors.
 
-**Documentation: https://eraslanbas.github.io/EXTRACT/**
+**Documentation: https://eraslanbas.github.io/CRYPTEX/**
 
 ## What it is for
 
@@ -16,7 +16,7 @@ how one perturbation moved one gene in one context.
 Each of those response vectors is a messy, high-dimensional readout. It spans
 thousands of genes, it carries estimation noise from a finite number of cells,
 and underneath it is a mixture of a small number of gene programs that the
-perturbation switched on or off. EXTRACT recovers that hidden structure:
+perturbation switched on or off. CRYPTEX recovers that hidden structure:
 
 - a **shared set of gene programs** (which genes move together), the same for
   every perturbation and every context;
@@ -33,7 +33,7 @@ perturbation switched on or off. EXTRACT recovers that hidden structure:
 screen is run to find out how a gene's function changes under a drug, in another
 genetic background or at another time. Analysing each context separately gives
 programs that cannot be compared across contexts; pooling all responses into one
-matrix forgets which perturbation and which context produced each row. EXTRACT
+matrix forgets which perturbation and which context produced each row. CRYPTEX
 keeps the design: one program space for the whole screen, so a perturbation's
 effect in one context and in another are read on the same axes, and their
 difference is the interaction.
@@ -42,7 +42,7 @@ difference is the interaction.
 factorisations of a response matrix (PCA, and the many methods built on it)
 pin down the subspace the programs live in but not the individual axes inside
 it: any rotation of the factors fits the data equally well, so the "programs"
-you read off are one arbitrary choice among many. EXTRACT uses the
+you read off are one arbitrary choice among many. CRYPTEX uses the
 perturbation and context labels as extra information. A discriminator that has
 to tell whether a response belongs to its (perturbation, context) label, and is
 only allowed to score each program separately, can succeed only when the axes
@@ -63,7 +63,7 @@ them, does not.
 
 ## How it works
 
-The programs are `B = A V` (programs × genes). EXTRACT separates *which
+The programs are `B = A V` (programs × genes). CRYPTEX separates *which
 subspace* they span from *which axes* inside it are the programs:
 
 1. **The subspace.** `V` (`d` × genes) is the PCA of the training pairs' mean
@@ -87,7 +87,7 @@ genes. The loss is
     L = L_disc + alpha * L_lasso + gamma * L_genes + mu * L_distinct
 
 ```python
-from extract.train import TrainConfig, fit
+from cryptex.train import TrainConfig, fit
 model, history = fit(X, perturbation_idx, context_idx, target_col,
                      config=TrainConfig(), train_rows=train, val_rows=val)
 ```
@@ -105,7 +105,7 @@ documentation for every choice and the reasoning behind it.
 ## Layout
 
 ```
-src/extract/      the method
+src/cryptex/      the method
     de/                 shrunken-logFC pipeline (Welch + ashr), per context
     data/               gene filter, on-target mask, leak-free splits, the subspace V
     models/             loadings B = A V, lasso activities, per-component head, label network
@@ -121,7 +121,7 @@ notebooks/              simulator and analysis notebooks
 tests/                  unit tests, no screen data needed
 ```
 
-The distribution is `extract-screens`; the import name is **`extract`**.
+The distribution is `cryptex-screens`; the import name is **`cryptex`**.
 
 ## Install
 
@@ -135,8 +135,8 @@ Building logFC matrices from single-cell data additionally needs R with `ashr`.
 ## Data
 
 The repository holds code only. Data artifacts (matrices, splits, sweep
-outputs) live under `$EXTRACT_ROOT`; resolve paths with
-`extract.paths`.
+outputs) live under `$CRYPTEX_ROOT`; resolve paths with
+`cryptex.paths`.
 
 ## Documentation
 

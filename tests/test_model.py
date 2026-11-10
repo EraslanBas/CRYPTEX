@@ -7,16 +7,16 @@ import pandas as pd
 import pytest
 import torch
 
-from extract.data.ontarget import mask_coverage, on_target_index
-from extract.evaluation import span_residual
-from extract.models import NO_MASK, GlobalLoadings, PerComponentHead
-from extract.models.label_net import FactorizedLabelNet
-from extract.objectives import (
+from cryptex.data.ontarget import mask_coverage, on_target_index
+from cryptex.evaluation import span_residual
+from cryptex.models import NO_MASK, GlobalLoadings, PerComponentHead
+from cryptex.models.label_net import FactorizedLabelNet
+from cryptex.objectives import (
     DEFAULT_WEIGHTS,
     StratifiedNegativeSampler,
     contrastive_loss,
 )
-from extract.train import TrainConfig, fit
+from cryptex.train import TrainConfig, fit
 
 
 # ---------------------------------------------------------------- eq. (2)/(4)
@@ -165,7 +165,7 @@ def test_label_net_takes_different_perturbation_and_context_sizes():
 
 def test_control_mean_embeddings_follow_the_context_order_and_scale():
     import pandas as pd
-    from extract.train import control_mean_embeddings
+    from cryptex.train import control_mean_embeddings
     rng = np.random.default_rng(0)
     means = pd.DataFrame(rng.normal(size=(5, 40)) + 3.0, index=list("abcde"))
     E = control_mean_embeddings(means, ["c", "a", "e", "b", "d"], dim=3)
@@ -185,7 +185,7 @@ def test_fit_starts_contexts_at_a_given_embedding():
 
 
 def test_response_embeddings_use_training_pairs_and_skip_own_knockdown():
-    from extract.train import response_embeddings
+    from cryptex.train import response_embeddings
     rng = np.random.default_rng(0)
     n_pert, n_ctx, G = 12, 3, 20
     p = np.repeat(np.arange(n_pert), n_ctx * 2); c = np.tile(np.repeat(np.arange(n_ctx), 2), n_pert)
@@ -486,7 +486,7 @@ def _toy_meta(n_pert=12, n_ctx=4, n_strata=3):
 
 def test_fit_trains_only_on_train_rows():
     """A held-out pair must never appear in a training batch."""
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta()
     X, p, c, s, n = _toy_dataset(n_pert=12, n_ctx=4, n_strata=3, n_genes=40)
@@ -508,7 +508,7 @@ def test_fit_trains_only_on_train_rows():
 
 
 def test_all_eleven_samples_of_a_held_out_pair_move_together():
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=20, n_ctx=3, n_strata=11)
     split = make_split(meta, level="pair", test_frac=0.15, seed=1)
@@ -529,8 +529,8 @@ def test_fit_rejects_a_split_smaller_than_one_batch():
 
 
 def test_evaluate_returns_the_documented_keys():
-    from extract.objectives import StratifiedNegativeSampler
-    from extract.train import evaluate
+    from cryptex.objectives import StratifiedNegativeSampler
+    from cryptex.train import evaluate
 
     X, p, c, s, n = _toy_dataset(n_pert=10, n_ctx=3, n_strata=3, n_genes=30)
     cfg = TrainConfig(pert_embedding_init="random", n_factors=4, epochs=2, batch_size=32, log_every=0,
@@ -554,7 +554,7 @@ def test_evaluate_returns_the_documented_keys():
 
 
 def test_three_way_split_is_disjoint_and_complete():
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=40, n_ctx=4, n_strata=11)
     split = make_split(meta, level="pair", test_frac=0.1, val_frac=0.1, seed=0)
@@ -567,7 +567,7 @@ def test_three_way_split_is_disjoint_and_complete():
 
 
 def test_three_way_split_keeps_pairs_whole():
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=30, n_ctx=3, n_strata=11)
     split = make_split(meta, level="pair", test_frac=0.12, val_frac=0.12, seed=3)
@@ -583,7 +583,7 @@ def test_three_way_split_keeps_pairs_whole():
 
 
 def test_split_rejects_impossible_fractions():
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=4, n_ctx=1, n_strata=2)
     with pytest.raises(ValueError, match="would hold out"):
@@ -593,7 +593,7 @@ def test_split_rejects_impossible_fractions():
 def test_the_kept_model_is_the_epoch_with_the_best_validation_auc():
     """Every epoch is trained; the kept state is the epoch whose validation ROC
     AUC is highest, and the last epoch's state is kept separately."""
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=16, n_ctx=4, n_strata=3)
     X, p, c, s, n = _toy_dataset(n_pert=16, n_ctx=4, n_strata=3, n_genes=40)
@@ -610,7 +610,7 @@ def test_the_kept_model_is_the_epoch_with_the_best_validation_auc():
 def test_total_is_the_objective_on_both_train_and_val():
     """`total` must equal disc + alpha*recon on both sides, so the two curves
     are the same quantity and their crossing is meaningful."""
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=16, n_ctx=4, n_strata=3)
     X, p, c, s, n = _toy_dataset(n_pert=16, n_ctx=4, n_strata=3, n_genes=40)
@@ -702,7 +702,7 @@ def test_single_context_perturbations_always_train():
     """A perturbation with one pair has nothing left to train e_p on if that
     pair is held out, so its row is unpredictable by construction. Those pairs
     must stay in train."""
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     rows = []
     for i in range(200):                       # 12 contexts each
@@ -737,7 +737,7 @@ def test_evaluate_takes_its_device_from_the_model_not_the_data():
     raises. Checked on CPU by putting the model on a meta-free device and
     asserting evaluate() uses `next(model.parameters()).device`."""
     import inspect
-    from extract import train as T
+    from cryptex import train as T
     src_ = inspect.getsource(T.evaluate)
     assert "next(model.parameters()).device" in src_, \
         "evaluate() must take its device from the model"
@@ -751,7 +751,7 @@ def test_evaluate_takes_its_device_from_the_model_not_the_data():
 def test_on_eval_snapshots_B_at_every_evaluation():
     """on_eval fires once per validation pass with the live model, so a copy
     of B taken there is the B of that epoch -- not the restored one."""
-    from extract.data.splits import make_split
+    from cryptex.data.splits import make_split
 
     meta = _toy_meta(n_pert=16, n_ctx=4, n_strata=3)
     X, p, c, s, n = _toy_dataset(n_pert=16, n_ctx=4, n_strata=3, n_genes=40)

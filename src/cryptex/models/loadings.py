@@ -243,7 +243,7 @@ def initial_axes(d: int, axes_init: str = "jd", seed: int = 0) -> torch.Tensor:
     """Starting ``A`` [d, d] for ``B = A V``: a random rotation drawn from
     ``seed`` (different for every seed, so that cross-seed agreement cannot come
     from a shared starting point), or -- for ``"jd"``, whose axes are computed
-    from the data (:func:`extract.train.jd_axes`) and passed in -- the identity
+    from the data (:func:`cryptex.train.jd_axes`) and passed in -- the identity
     as a placeholder that ``load_state_dict`` overwrites when a saved model is
     rebuilt."""
     if axes_init == "jd":

@@ -17,7 +17,7 @@ def weighted_squared_error(
     """Weighted mean of per-row errors.
 
     ``per_row_error`` comes from
-    :meth:`extract.models.loadings.GlobalLoadings.squared_error`, which
+    :meth:`cryptex.models.loadings.GlobalLoadings.squared_error`, which
     has already applied the on-target mask and divided by the retained gene
     count. Weights are renormalised within the batch so ``alpha`` means the
     same thing at any batch size.

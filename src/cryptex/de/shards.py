@@ -123,7 +123,7 @@ def plan_shard_rows(
     subsets with sizes spanning ``[min_cells_to_subsample, n)``, drawn
     independently, so they overlap each other. ``scheme="disjoint"``: up to
     ``n_subsamples`` non-overlapping pseudobulks of exactly ``replicate_cells``
-    cells each (:func:`~extract.de.arms.disjoint_replicates`). Both keep the
+    cells each (:func:`~cryptex.de.arms.disjoint_replicates`). Both keep the
     full row and label the extra rows ``<pert>__sub<k>``, so everything
     downstream reads them the same way; ``row_plan.csv`` records the scheme.
 

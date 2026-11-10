@@ -12,7 +12,7 @@ def test_affected_counts_uses_main_rows_only():
     multiply every gene's count without adding information."""
     import numpy as np
     import pandas as pd
-    from extract.data import affected_counts
+    from cryptex.data import affected_counts
 
     X = pd.DataFrame(
         [[0.5, 0.0], [0.5, 0.0], [0.5, 0.0], [0.0, 0.4]],
@@ -29,7 +29,7 @@ def test_affected_counts_uses_main_rows_only():
 def test_select_genes_applies_the_minimum():
     import numpy as np
     import pandas as pd
-    from extract.data import select_genes
+    from cryptex.data import select_genes
 
     X = pd.DataFrame(
         [[0.5, 0.5, 0.0], [0.5, 0.0, 0.0], [0.5, 0.0, 0.05]],
@@ -44,7 +44,7 @@ def test_affected_counts_rejects_misaligned_meta():
     import numpy as np
     import pandas as pd
     import pytest
-    from extract.data import affected_counts
+    from cryptex.data import affected_counts
 
     X = pd.DataFrame([[0.5], [0.5]], columns=["A"])
     with pytest.raises(ValueError, match="align"):
@@ -52,7 +52,7 @@ def test_affected_counts_rejects_misaligned_meta():
 
 
 def test_disjoint_scheme_gives_non_overlapping_equal_size_pseudobulks():
-    from extract.de.shards import plan_shard_rows
+    from cryptex.de.shards import plan_shard_rows
     p = np.array(["A"] * 350 + ["B"] * 1500 + ["C"] * 90)
     cell_index, labels, plan = plan_shard_rows(p, 10, scheme="disjoint", replicate_cells=100, seed=1)
     sub = plan[plan.variant == "subsample"]

@@ -1,6 +1,6 @@
-"""Linear ICA baselines -- the ones extract has to beat.
+"""Linear ICA baselines -- the ones CRYPTEX has to beat.
 
-With a global linear decoder and a linear encoder, extract *is* linear ICA
+With a global linear decoder and a linear encoder, CRYPTEX *is* linear ICA
 with auxiliary variables. So these are not weak strawmen: they estimate the same
 model class by cheaper means, and they run in minutes on the rowbound matrix.
 
